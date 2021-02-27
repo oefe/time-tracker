@@ -63,7 +63,18 @@ def format_timedelta(td):
     return f"{hours}:{minutes:02}"
 
 def write_menu():
-    events = load_log()
+    try:
+        events = load_log()
+    except FileNotFoundError:
+        print ("❓")
+        print("---")
+        print("No log file")
+        return
+    except Exception as e:
+        print ("⁉️")
+        print("---")
+        print(e)
+        return
     spans = get_work_spans(events)
     cumulative_work_today = get_cumulative_work_today(spans)
     hours = cumulative_work_today / datetime.timedelta(hours=1)
