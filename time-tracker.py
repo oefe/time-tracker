@@ -95,8 +95,18 @@ def run_agent():
 
     nc = Foundation.NSDistributedNotificationCenter.defaultCenter()
     observer = Observer.new()
-    nc.addObserver_selector_name_object_(observer, 'screenIsLocked:', 'com.apple.screenIsLocked', None)
-    nc.addObserver_selector_name_object_(observer, 'screenIsUnlocked:', 'com.apple.screenIsUnlocked', None)
+    nc.addObserver_selector_name_object_suspensionBehavior_(
+        observer,
+        'screenIsLocked:',
+        'com.apple.screenIsLocked',
+        None,
+        Foundation.NSNotificationSuspensionBehaviorDeliverImmediately)
+    nc.addObserver_selector_name_object_suspensionBehavior_(
+        observer,
+        'screenIsUnlocked:',
+        'com.apple.screenIsUnlocked',
+        None,
+        Foundation.NSNotificationSuspensionBehaviorDeliverImmediately)   
     log_event("AgentStart")
     try:
         AppHelper.runConsoleEventLoop()
