@@ -78,7 +78,7 @@ def write_menu():
     spans = get_work_spans(events)
     cumulative_work_today = get_cumulative_work_today(spans)
     hours = cumulative_work_today / datetime.timedelta(hours=1)
-    print(f"{format_timedelta(cumulative_work_today)} {BARS[max(int(hours), 8)]}")
+    print(f"{format_timedelta(cumulative_work_today)} {BARS[min(int(hours), 8)]}")
     print("---")
     for (start, end) in spans:
         print(f"{start:%H:%M}-{end:%H:%M} ({format_timedelta(end-start)})")
