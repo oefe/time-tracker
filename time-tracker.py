@@ -100,10 +100,10 @@ def run_agent():
     from PyObjCTools import AppHelper 
     class Observer(Foundation.NSObject):
         def onActivation_(self, notification):
-            log_event(notification.name, Activity.WORKING)    
+            log_event(notification.name(), Activity.WORKING)    
 
         def onDeactivation_(self, notification):
-            log_event(notification.name, Activity.IDLE)    
+            log_event(notification.name(), Activity.IDLE)    
 
     nc = Foundation.NSDistributedNotificationCenter.defaultCenter()
     observer = Observer.new()
