@@ -109,13 +109,13 @@ def run_agent():
     observer = Observer.new()
     nc.addObserver_selector_name_object_suspensionBehavior_(
         observer,
-        'onActivation:',
+        'onDeactivation:',
         'com.apple.screenIsLocked',
         None,
         Foundation.NSNotificationSuspensionBehaviorDeliverImmediately)
     nc.addObserver_selector_name_object_suspensionBehavior_(
         observer,
-        'onDeactivation:',
+        'onActivation:',
         'com.apple.screenIsUnlocked',
         None,
         Foundation.NSNotificationSuspensionBehaviorDeliverImmediately)
