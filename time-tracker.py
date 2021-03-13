@@ -9,6 +9,7 @@
 # <bitbar.abouturl>http://oefelein.de/</bitbar.abouturl>
 
 import datetime
+import enum
 import os
 import os.path
 import sys
@@ -16,35 +17,45 @@ import sys
 BARS = " ▁▂▃▄▅▆▇█"
 LOGDIR = os.path.expanduser("~/.time-tracker")
 
+Activity = enum.Enum("Activity", "IDLE WORKING")
+
 def get_log_filename(day=None):
     if day is None:
         day = datetime.date.today()
     return os.path.join(LOGDIR, f"{day}.log")
     
-def log_event(name):
+def log_event(name: str, activity: Activity):
     os.makedirs(LOGDIR, exist_ok=True)
     now = datetime.datetime.now()
     filename = get_log_filename(now.date())
     with open(filename, mode="a") as log:
-        print(now, name, sep="\t", file=log)
+        print(now, name, activity.name, sep="\t", file=log)
+
+def parse_log_line(line: str):
+    timestamp, event, *rest = line.strip().split("\t")
+    if rest:
+        activity = Activity[rest[0]]
+    elif event == "ScreenUnlock":
+        activity = Activity.WORKING
+    else:
+        activity = Activity.IDLE
+    return datetime.datetime.fromisoformat(timestamp), event, activity
 
 def load_log(day=None):
     filename = get_log_filename(day)
     with open(filename) as log:
         lines = log.readlines()
-    fields = [line.strip().split("\t") for line in lines]
-    events = [(datetime.datetime.fromisoformat(d), e) for (d, e) in fields]
-    return events
+    return [parse_log_line(line) for line in lines]
 
 def get_work_spans(events):
     spans = []
     working = False
-    for (d, e) in events:
-        if e == "ScreenUnlock":
+    for (d, _, activity) in events:
+        if activity is Activity.WORKING:
             if not working:
                 working = True
                 start = d
-        elif e == "ScreenLock":
+        else:
             if working:
                 working = False
                 spans.append((start, d))
@@ -84,37 +95,60 @@ def write_menu():
         print(f"{start:%H:%M}-{end:%H:%M} ({format_timedelta(end-start)})")
 
 def run_agent():
+    import AppKit
     import Foundation
     from PyObjCTools import AppHelper 
     class Observer(Foundation.NSObject):
-        def screenIsLocked_(self, notification):
-            log_event("ScreenLock")    
+        def onActivation_(self, notification):
+            log_event(notification.name, Activity.WORKING)    
 
-        def screenIsUnlocked_(self, notification):
-            log_event("ScreenUnlock")    
+        def onDeactivation_(self, notification):
+            log_event(notification.name, Activity.IDLE)    
 
     nc = Foundation.NSDistributedNotificationCenter.defaultCenter()
     observer = Observer.new()
     nc.addObserver_selector_name_object_suspensionBehavior_(
         observer,
-        'screenIsLocked:',
+        'onActivation:',
         'com.apple.screenIsLocked',
         None,
         Foundation.NSNotificationSuspensionBehaviorDeliverImmediately)
     nc.addObserver_selector_name_object_suspensionBehavior_(
         observer,
-        'screenIsUnlocked:',
+        'onDeactivation:',
         'com.apple.screenIsUnlocked',
         None,
-        Foundation.NSNotificationSuspensionBehaviorDeliverImmediately)   
-    log_event("AgentStart")
+        Foundation.NSNotificationSuspensionBehaviorDeliverImmediately)
+    wnc = AppKit.NSWorkspace.sharedWorkspace().notificationCenter()
+    for notification in (
+        AppKit.NSWorkspaceSessionDidBecomeActiveNotification,
+        AppKit.NSWorkspaceDidWakeNotification,
+        AppKit.NSWorkspaceScreensDidWakeNotification,        
+    ):
+        wnc.addObserver_selector_name_object_(
+            observer,
+            'onActivation:',
+            notification,
+            None)
+    for notification in (
+        AppKit.NSWorkspaceSessionDidResignActiveNotification,
+        AppKit.NSWorkspaceWillPowerOffNotification,
+        AppKit.NSWorkspaceWillSleepNotification,
+        AppKit.NSWorkspaceScreensDidSleepNotification,
+    ):
+        wnc.addObserver_selector_name_object_(
+            observer,
+            'onDeactivation:',
+            notification,
+            None)
+    log_event("AgentStart", Activity.WORKING)
     try:
         AppHelper.runConsoleEventLoop()
     except KeyboardInterrupt:
-        log_event("AgentStop")
+        log_event("AgentStop", Activity.IDLE)
     except Exception as e:
         print(e)
-        log_event("AgentException")
+        log_event("AgentException", Activity.IDLE)
 
 if len(sys.argv) > 1:
     if sys.argv[1] == "agent":
