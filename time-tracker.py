@@ -19,6 +19,9 @@ LOGDIR = os.path.expanduser("~/.time-tracker")
 
 Activity = enum.Enum("Activity", "IDLE WORKING")
 
+SHORT_BREAK = datetime.timedelta(minutes=3)
+SHORT_WORK = datetime.timedelta(minutes=1)
+
 def get_log_filename(day=None):
     if day is None:
         day = datetime.date.today()
@@ -63,6 +66,21 @@ def get_work_spans(events):
         spans.append((start, datetime.datetime.now()))
     return spans
 
+def suppress_short_breaks(spans):
+    result = []
+    (current_start, current_end) = spans[0]
+    for (next_start, next_end) in spans[1:]:
+        if next_start - current_end < SHORT_BREAK:
+            current_end = next_end
+        else:
+            result.append((current_start, current_end))
+            (current_start, current_end) = (next_start, next_end)
+    result.append((current_start, current_end))
+    return result
+
+def support_short_work(spans):
+    return [(start, end) for (start, end) in spans if end - start > SHORT_WORK]
+
 def get_cumulative_work_today(spans):
     durations = [end - start for (start, end) in spans]
     #TODO adjust durations for required breaks
@@ -87,13 +105,15 @@ def write_menu():
         print(e)
         return
     spans = get_work_spans(events)
+    spans = suppress_short_breaks(spans)
+    spans = support_short_work(spans)
     cumulative_work_today = get_cumulative_work_today(spans)
     hours = cumulative_work_today / datetime.timedelta(hours=1)
     print(f"{format_timedelta(cumulative_work_today)} {BARS[min(int(hours), 8)]}")
     print("---")
     for (start, end) in spans:
         print(f"{start:%H:%M}-{end:%H:%M} ({format_timedelta(end-start)})")
-
+    
 def run_agent():
     import AppKit
     import Foundation
