@@ -1,0 +1,20 @@
+from enum import Enum
+from typing import Any, Optional
+
+
+class NSObject:
+    @classmethod
+    def new(cls) -> Any: ...
+
+class NSNotificationCenter (NSObject):
+    def addObserver_selector_name_object_(self, observer: NSObject, selector: str, name: str, object: Optional[NSObject]): ...
+
+class NSNotificationSuspensionBehavior(Enum):
+    NSNotificationSuspensionBehaviorDeliverImmediately: int
+
+NSNotificationSuspensionBehaviorDeliverImmediately = NSNotificationSuspensionBehavior.NSNotificationSuspensionBehaviorDeliverImmediately
+
+class NSDistributedNotificationCenter (NSNotificationCenter):
+    @classmethod
+    def defaultCenter(cls) -> NSDistributedNotificationCenter: ...
+    def addObserver_selector_name_object_suspensionBehavior_(self, observer: NSObject, selector: str, name: str, object: Optional[NSObject], suspensionBehavior: NSNotificationSuspensionBehavior): ...
