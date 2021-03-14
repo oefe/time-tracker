@@ -74,7 +74,7 @@ def get_work_spans(events: Sequence[Event]) -> Sequence[Span]:
         spans.append((start, datetime.datetime.now()))
     return spans
 
-def suppress_short_breaks(spans: Sequence[Span]) -> Iterable[Span]:
+def filter_short_breaks(spans: Sequence[Span]) -> Iterable[Span]:
     (current_start, current_end) = spans[0]
     for (next_start, next_end) in spans[1:]:
         if next_start - current_end < SHORT_BREAK:
@@ -84,7 +84,7 @@ def suppress_short_breaks(spans: Sequence[Span]) -> Iterable[Span]:
             (current_start, current_end) = (next_start, next_end)
     yield (current_start, current_end)
 
-def support_short_work(spans: Iterable[Span]) -> Sequence[Span]:
+def filter_short_work(spans: Iterable[Span]) -> Sequence[Span]:
     return [(start, end) for (start, end) in spans if end - start > SHORT_WORK]
 
 def get_cumulative_work_today(spans: Iterable[Span]) -> datetime.timedelta:
@@ -141,8 +141,8 @@ def write_menu():
         print(e)
         return
     spans = get_work_spans(events)
-    spans = suppress_short_breaks(spans)
-    spans = support_short_work(spans)
+    spans = filter_short_breaks(spans)
+    spans = filter_short_work(spans)
     cumulative_work_today = get_cumulative_work_today(spans)
     hours = cumulative_work_today / datetime.timedelta(hours=1)
     messages = list(get_messages(spans, hours))
