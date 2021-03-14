@@ -14,7 +14,7 @@ import enum
 import os
 import os.path
 import sys
-from typing import Iterable, Optional, Sequence, Tuple
+from typing import Iterable, NamedTuple, Optional, Sequence, Tuple
 
 BARS = " ▁▂▃▄▅▆▇█"
 LOGDIR = os.path.expanduser("~/.time-tracker")
@@ -27,7 +27,10 @@ SHORT_BREAK = datetime.timedelta(minutes=3)
 SHORT_WORK = datetime.timedelta(minutes=1)
 
 Event = Tuple[datetime.datetime, str, Activity]
-Span = Tuple[datetime.datetime, datetime.datetime]
+
+class Span(NamedTuple):
+    start: datetime.datetime
+    end: datetime.datetime
 
 def get_log_filename(day: Optional[datetime.date]=None) -> str:
     if day is None:
@@ -69,9 +72,9 @@ def get_work_spans(events: Sequence[Event]) -> Sequence[Span]:
         else:
             if working:
                 working = False
-                spans.append((start, d))
+                spans.append(Span (start, d))
     if working:
-        spans.append((start, datetime.datetime.now()))
+        spans.append(Span(start, datetime.datetime.now()))
     return spans
 
 def filter_short_breaks(spans: Sequence[Span]) -> Iterable[Span]:
@@ -80,12 +83,12 @@ def filter_short_breaks(spans: Sequence[Span]) -> Iterable[Span]:
         if next_start - current_end < SHORT_BREAK:
             current_end = next_end
         else:
-            yield (current_start, current_end)
+            yield Span(current_start, current_end)
             (current_start, current_end) = (next_start, next_end)
-    yield (current_start, current_end)
+    yield Span(current_start, current_end)
 
 def filter_short_work(spans: Iterable[Span]) -> Sequence[Span]:
-    return [(start, end) for (start, end) in spans if end - start > SHORT_WORK]
+    return [Span(start, end) for (start, end) in spans if end - start > SHORT_WORK]
 
 def get_cumulative_work_today(spans: Iterable[Span]) -> datetime.timedelta:
     durations = [end - start for (start, end) in spans]
