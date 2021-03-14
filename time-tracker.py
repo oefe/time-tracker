@@ -8,11 +8,13 @@
 # <bitbar.dependencies>python</bitbar.dependencies>
 # <bitbar.abouturl>http://oefelein.de/</bitbar.abouturl>
 
+from dataclasses import dataclass
 import datetime
 import enum
 import os
 import os.path
 import sys
+from typing import Iterable
 
 BARS = " ▁▂▃▄▅▆▇█"
 LOGDIR = os.path.expanduser("~/.time-tracker")
@@ -91,6 +93,33 @@ def format_timedelta(td):
     minutes = rest // datetime.timedelta(minutes=1)
     return f"{hours}:{minutes:02}"
 
+class Level(enum.IntEnum):
+    INFO = 0
+    PRAISE = 1
+    WARNING = 2
+    ERROR = 3
+
+    def format(self):
+        return ["", "color=green", "color=orange", "color=red"][self.value]
+
+@dataclass
+class Message:
+    level: Level
+    text: str
+
+def get_messages(spans, total_hours) -> Iterable[Message]:
+    if total_hours > 10.0:
+        yield Message(Level.ERROR, "Your worked already longer than allowed")
+    elif total_hours > 9.0:
+        yield Message(Level.WARNING, "You really worked enough for today")
+    elif 7.75 < total_hours < 8.25:
+        yield Message(Level.PRAISE, "You worked enough for today")
+    _, end = spans[-1]
+    if end.hour >= 22:
+        yield Message(Level.ERROR, "Stop working now, it's after 10pm!")
+    elif end.hour >= 21:
+        yield Message(Level.WARNING, "Time to stop working?")
+
 def write_menu():
     try:
         events = load_log()
@@ -109,8 +138,12 @@ def write_menu():
     spans = support_short_work(spans)
     cumulative_work_today = get_cumulative_work_today(spans)
     hours = cumulative_work_today / datetime.timedelta(hours=1)
-    print(f"{format_timedelta(cumulative_work_today)} {BARS[min(int(hours), 8)]}")
+    messages = list(get_messages(spans, hours))
+    level = max([m.level for m in messages], default=Level.INFO)
+    print(f"{format_timedelta(cumulative_work_today)} {BARS[min(int(hours), 8)]}|{level.format()}")
     print("---")
+    for message in messages:
+        print(f"{message.text}|{message.level.format()}")
     for (start, end) in spans:
         print(f"{start:%H:%M}-{end:%H:%M} ({format_timedelta(end-start)})")
     
