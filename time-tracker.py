@@ -14,7 +14,7 @@ import enum
 import os
 import os.path
 import sys
-from typing import Iterable, NamedTuple, Optional, Sequence, Tuple
+from typing import Iterable, NamedTuple, Optional, Sequence
 
 BARS = " ▁▂▃▄▅▆▇█"
 LOGDIR = os.path.expanduser("~/.time-tracker")
@@ -26,7 +26,10 @@ class Activity (enum.Enum):
 SHORT_BREAK = datetime.timedelta(minutes=3)
 SHORT_WORK = datetime.timedelta(minutes=1)
 
-Event = Tuple[datetime.datetime, str, Activity]
+class Event(NamedTuple):
+    timestamp: datetime.datetime
+    name: str
+    activity: Activity
 
 class Span(NamedTuple):
     start: datetime.datetime
@@ -51,14 +54,14 @@ def log_event(name: str, activity: Activity):
         print(now, name, activity.name, sep="\t", file=log)
 
 def parse_log_line(line: str) -> Event:
-    timestamp, event, *rest = line.strip().split("\t")
+    timestamp, name, *rest = line.strip().split("\t")
     if rest:
         activity = Activity[rest[0]]
-    elif event == "ScreenUnlock":
+    elif name == "ScreenUnlock":
         activity = Activity.WORKING
     else:
         activity = Activity.IDLE
-    return datetime.datetime.fromisoformat(timestamp), event, activity
+    return Event(datetime.datetime.fromisoformat(timestamp), name, activity)
 
 def load_log(day: Optional[datetime.date]=None) -> Sequence[Event]:
     filename = get_log_filename(day)
