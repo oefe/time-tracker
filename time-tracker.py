@@ -98,7 +98,7 @@ def filter_short_breaks(spans: Iterable[Span]) -> Iterable[Span]:
 def filter_short_work(spans: Iterable[Span]) -> Iterable[Span]:
     return (s for s in spans if s.duration() > SHORT_WORK)
 
-def get_cumulative_work_today(spans: Iterable[Span]) -> datetime.timedelta:
+def get_cumulative_work(spans: Iterable[Span]) -> datetime.timedelta:
     #TODO adjust durations for required breaks
     return sum((s.duration() for s in spans), datetime.timedelta())
 
@@ -153,7 +153,7 @@ def write_menu():
     spans = get_work_spans(events)
     spans = filter_short_breaks(spans)
     spans = list(filter_short_work(spans))
-    cumulative_work_today = get_cumulative_work_today(spans)
+    cumulative_work_today = get_cumulative_work(spans)
     hours = cumulative_work_today / datetime.timedelta(hours=1)
     messages = list(get_messages(spans, hours))
     level = max([m.level for m in messages], default=Level.INFO)
