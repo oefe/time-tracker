@@ -1,0 +1,16 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "../../.time-tracker"
+		},
+		{
+			"path": "../bitbar-plugins/Enabled"
+		}
+	],
+	"settings": {
+		"python.languageServer": "Pylance"
+	}
+}

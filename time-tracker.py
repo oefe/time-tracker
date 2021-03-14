@@ -8,8 +8,6 @@
 # <bitbar.dependencies>python</bitbar.dependencies>
 # <bitbar.abouturl>http://oefelein.de/</bitbar.abouturl>
 
-# pyright: reportMissingTypeStubs=true
-
 from dataclasses import dataclass
 import datetime
 import enum
@@ -21,7 +19,9 @@ from typing import Iterable, Optional, Sequence, Tuple
 BARS = " ▁▂▃▄▅▆▇█"
 LOGDIR = os.path.expanduser("~/.time-tracker")
 
-Activity = enum.Enum("Activity", "IDLE WORKING")
+class Activity (enum.Enum):
+    IDLE = 0
+    WORKING = 1
 
 SHORT_BREAK = datetime.timedelta(minutes=3)
 SHORT_WORK = datetime.timedelta(minutes=1)
@@ -29,7 +29,7 @@ SHORT_WORK = datetime.timedelta(minutes=1)
 Event = Tuple[datetime.datetime, str, Activity]
 Span = Tuple[datetime.datetime, datetime.datetime]
 
-def get_log_filename(day: datetime.date=None) -> str:
+def get_log_filename(day: Optional[datetime.date]=None) -> str:
     if day is None:
         day = datetime.date.today()
     return os.path.join(LOGDIR, f"{day}.log")
@@ -51,16 +51,16 @@ def parse_log_line(line: str) -> Event:
         activity = Activity.IDLE
     return datetime.datetime.fromisoformat(timestamp), event, activity
 
-def load_log(day=None) -> Sequence[Event]:
+def load_log(day: Optional[datetime.date]=None) -> Sequence[Event]:
     filename = get_log_filename(day)
     with open(filename) as log:
         lines = log.readlines()
     return [parse_log_line(line) for line in lines]
 
 def get_work_spans(events: Sequence[Event]) -> Sequence[Span]:
-    spans = []
+    spans: list[Span] = []
     working = False
-    start: Optional[datetime.datetime] = None
+    start = datetime.datetime.now()
     for (d, _, activity) in events:
         if activity is Activity.WORKING:
             if not working:
@@ -74,17 +74,15 @@ def get_work_spans(events: Sequence[Event]) -> Sequence[Span]:
         spans.append((start, datetime.datetime.now()))
     return spans
 
-def suppress_short_breaks(spans: Sequence[Span]) -> Sequence[Span]:
-    result = []
+def suppress_short_breaks(spans: Sequence[Span]) -> Iterable[Span]:
     (current_start, current_end) = spans[0]
     for (next_start, next_end) in spans[1:]:
         if next_start - current_end < SHORT_BREAK:
             current_end = next_end
         else:
-            result.append((current_start, current_end))
+            yield (current_start, current_end)
             (current_start, current_end) = (next_start, next_end)
-    result.append((current_start, current_end))
-    return result
+    yield (current_start, current_end)
 
 def support_short_work(spans: Iterable[Span]) -> Sequence[Span]:
     return [(start, end) for (start, end) in spans if end - start > SHORT_WORK]
@@ -161,10 +159,10 @@ def run_agent():
     import Foundation
     from PyObjCTools import AppHelper
     class Observer(Foundation.NSObject):
-        def onActivation_(self, notification):
+        def onActivation_(self, notification: Foundation.NSNotification):
             log_event(notification.name(), Activity.WORKING)    
 
-        def onDeactivation_(self, notification):
+        def onDeactivation_(self, notification: Foundation.NSNotification):
             log_event(notification.name(), Activity.IDLE)    
 
     nc = Foundation.NSDistributedNotificationCenter.defaultCenter()

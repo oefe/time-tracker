@@ -1,3 +1,4 @@
 {
-    "python.pythonPath": "/Users/martina/miniconda3/envs/time-tracker/bin/python"
+    "python.pythonPath": "/Users/martina/miniconda3/envs/time-tracker/bin/python",
+    "python.analysis.typeCheckingMode": "strict"
 }

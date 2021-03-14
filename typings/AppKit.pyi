@@ -1,5 +1,4 @@
 import Foundation
-import Foundation
 
 class NSWorkspace(Foundation.NSObject):
     @classmethod
