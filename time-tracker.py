@@ -14,7 +14,7 @@ import enum
 import os
 import os.path
 import sys
-from typing import Iterable
+from typing import Iterable, Sequence, Tuple
 
 BARS = " ▁▂▃▄▅▆▇█"
 LOGDIR = os.path.expanduser("~/.time-tracker")
@@ -24,7 +24,10 @@ Activity = enum.Enum("Activity", "IDLE WORKING")
 SHORT_BREAK = datetime.timedelta(minutes=3)
 SHORT_WORK = datetime.timedelta(minutes=1)
 
-def get_log_filename(day=None):
+Event = Tuple[datetime.datetime, str, Activity]
+Span = Tuple[datetime.datetime, datetime.datetime]
+
+def get_log_filename(day: datetime.date=None) -> str:
     if day is None:
         day = datetime.date.today()
     return os.path.join(LOGDIR, f"{day}.log")
@@ -36,7 +39,7 @@ def log_event(name: str, activity: Activity):
     with open(filename, mode="a") as log:
         print(now, name, activity.name, sep="\t", file=log)
 
-def parse_log_line(line: str):
+def parse_log_line(line: str) -> Event:
     timestamp, event, *rest = line.strip().split("\t")
     if rest:
         activity = Activity[rest[0]]
@@ -46,13 +49,13 @@ def parse_log_line(line: str):
         activity = Activity.IDLE
     return datetime.datetime.fromisoformat(timestamp), event, activity
 
-def load_log(day=None):
+def load_log(day=None) -> Sequence[Event]:
     filename = get_log_filename(day)
     with open(filename) as log:
         lines = log.readlines()
     return [parse_log_line(line) for line in lines]
 
-def get_work_spans(events):
+def get_work_spans(events: Sequence[Event]) -> Sequence[Span]:
     spans = []
     working = False
     for (d, _, activity) in events:
@@ -68,7 +71,7 @@ def get_work_spans(events):
         spans.append((start, datetime.datetime.now()))
     return spans
 
-def suppress_short_breaks(spans):
+def suppress_short_breaks(spans: Iterable[Span]) -> Sequence[Span]:
     result = []
     (current_start, current_end) = spans[0]
     for (next_start, next_end) in spans[1:]:
@@ -80,15 +83,15 @@ def suppress_short_breaks(spans):
     result.append((current_start, current_end))
     return result
 
-def support_short_work(spans):
+def support_short_work(spans: Iterable[Span]) -> Sequence[Span]:
     return [(start, end) for (start, end) in spans if end - start > SHORT_WORK]
 
-def get_cumulative_work_today(spans):
+def get_cumulative_work_today(spans: Iterable[Span]) -> datetime.timedelta:
     durations = [end - start for (start, end) in spans]
     #TODO adjust durations for required breaks
     return sum(durations, datetime.timedelta())
 
-def format_timedelta(td):
+def format_timedelta(td: datetime.timedelta) -> str:
     hours, rest = divmod(td, datetime.timedelta(hours=1))
     minutes = rest // datetime.timedelta(minutes=1)
     return f"{hours}:{minutes:02}"
@@ -107,7 +110,7 @@ class Message:
     level: Level
     text: str
 
-def get_messages(spans, total_hours) -> Iterable[Message]:
+def get_messages(spans: Sequence[Span], total_hours: float) -> Iterable[Message]:
     if total_hours > 10.0:
         yield Message(Level.ERROR, "Your worked already longer than allowed")
     elif total_hours > 9.0:
