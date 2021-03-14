@@ -8,13 +8,15 @@
 # <bitbar.dependencies>python</bitbar.dependencies>
 # <bitbar.abouturl>http://oefelein.de/</bitbar.abouturl>
 
+# pyright: reportMissingTypeStubs=true
+
 from dataclasses import dataclass
 import datetime
 import enum
 import os
 import os.path
 import sys
-from typing import Iterable, Sequence, Tuple
+from typing import Iterable, Optional, Sequence, Tuple
 
 BARS = " ▁▂▃▄▅▆▇█"
 LOGDIR = os.path.expanduser("~/.time-tracker")
@@ -58,6 +60,7 @@ def load_log(day=None) -> Sequence[Event]:
 def get_work_spans(events: Sequence[Event]) -> Sequence[Span]:
     spans = []
     working = False
+    start: Optional[datetime.datetime] = None
     for (d, _, activity) in events:
         if activity is Activity.WORKING:
             if not working:
@@ -71,7 +74,7 @@ def get_work_spans(events: Sequence[Event]) -> Sequence[Span]:
         spans.append((start, datetime.datetime.now()))
     return spans
 
-def suppress_short_breaks(spans: Iterable[Span]) -> Sequence[Span]:
+def suppress_short_breaks(spans: Sequence[Span]) -> Sequence[Span]:
     result = []
     (current_start, current_end) = spans[0]
     for (next_start, next_end) in spans[1:]:
@@ -92,7 +95,10 @@ def get_cumulative_work_today(spans: Iterable[Span]) -> datetime.timedelta:
     return sum(durations, datetime.timedelta())
 
 def format_timedelta(td: datetime.timedelta) -> str:
-    hours, rest = divmod(td, datetime.timedelta(hours=1))
+    # work around https://github.com/microsoft/pyright/issues/1629
+    # hours, rest = divmod(td, datetime.timedelta(hours=1))
+    hours = td // datetime.timedelta(hours=1)
+    rest = td % datetime.timedelta(hours=1) 
     minutes = rest // datetime.timedelta(minutes=1)
     return f"{hours}:{minutes:02}"
 
@@ -153,7 +159,7 @@ def write_menu():
 def run_agent():
     import AppKit
     import Foundation
-    from PyObjCTools import AppHelper 
+    from PyObjCTools import AppHelper
     class Observer(Foundation.NSObject):
         def onActivation_(self, notification):
             log_event(notification.name(), Activity.WORKING)    
