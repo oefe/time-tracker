@@ -32,6 +32,12 @@ class Span(NamedTuple):
     start: datetime.datetime
     end: datetime.datetime
 
+    def duration(self) -> datetime.timedelta:
+        return self.end - self.start
+    
+    def __str__(self) -> str:
+        return f"{self.start:%H:%M}-{self.end:%H:%M} ({format_timedelta(self.duration())})"
+
 def get_log_filename(day: Optional[datetime.date]=None) -> str:
     if day is None:
         day = datetime.date.today()
@@ -60,8 +66,7 @@ def load_log(day: Optional[datetime.date]=None) -> Sequence[Event]:
         lines = log.readlines()
     return [parse_log_line(line) for line in lines]
 
-def get_work_spans(events: Sequence[Event]) -> Sequence[Span]:
-    spans: list[Span] = []
+def get_work_spans(events: Sequence[Event]) -> Iterable[Span]:
     working = False
     start = datetime.datetime.now()
     for (d, _, activity) in events:
@@ -72,28 +77,27 @@ def get_work_spans(events: Sequence[Event]) -> Sequence[Span]:
         else:
             if working:
                 working = False
-                spans.append(Span (start, d))
+                yield Span (start, d)
     if working:
-        spans.append(Span(start, datetime.datetime.now()))
-    return spans
+        yield Span(start, datetime.datetime.now())
 
-def filter_short_breaks(spans: Sequence[Span]) -> Iterable[Span]:
-    (current_start, current_end) = spans[0]
-    for (next_start, next_end) in spans[1:]:
-        if next_start - current_end < SHORT_BREAK:
-            current_end = next_end
+def filter_short_breaks(spans: Iterable[Span]) -> Iterable[Span]:
+    it = iter(spans)
+    current = next(it)
+    for nxt in it:
+        if nxt.start - current.end < SHORT_BREAK:
+            current.end = nxt.end
         else:
-            yield Span(current_start, current_end)
-            (current_start, current_end) = (next_start, next_end)
-    yield Span(current_start, current_end)
+            yield current
+            current = nxt
+    yield current
 
-def filter_short_work(spans: Iterable[Span]) -> Sequence[Span]:
-    return [Span(start, end) for (start, end) in spans if end - start > SHORT_WORK]
+def filter_short_work(spans: Iterable[Span]) -> Iterable[Span]:
+    return (s for s in spans if s.duration() > SHORT_WORK)
 
 def get_cumulative_work_today(spans: Iterable[Span]) -> datetime.timedelta:
-    durations = [end - start for (start, end) in spans]
     #TODO adjust durations for required breaks
-    return sum(durations, datetime.timedelta())
+    return sum((s.duration() for s in spans), datetime.timedelta())
 
 def format_timedelta(td: datetime.timedelta) -> str:
     # work around https://github.com/microsoft/pyright/issues/1629
@@ -145,7 +149,7 @@ def write_menu():
         return
     spans = get_work_spans(events)
     spans = filter_short_breaks(spans)
-    spans = filter_short_work(spans)
+    spans = list(filter_short_work(spans))
     cumulative_work_today = get_cumulative_work_today(spans)
     hours = cumulative_work_today / datetime.timedelta(hours=1)
     messages = list(get_messages(spans, hours))
@@ -154,8 +158,8 @@ def write_menu():
     print("---")
     for message in messages:
         print(f"{message.text}|{message.level.format()}")
-    for (start, end) in spans:
-        print(f"{start:%H:%M}-{end:%H:%M} ({format_timedelta(end-start)})")
+    for s in spans:
+        print(s)
     
 def run_agent():
     import AppKit
