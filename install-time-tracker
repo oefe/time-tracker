@@ -6,7 +6,7 @@ conda env create
 conda activate time-tracker
 
 echo installing SwiftBar Plugin
-ln -s time-tracker.py `defaults read com.ameba.SwiftBar PluginDirectory`/time-tracker.1m.py
+ln -s `pwd`/time-tracker.py `defaults read com.ameba.SwiftBar PluginDirectory`/time-tracker.1m.py
 
 echo installing launch agent
 cat <<EOF > ~/Library/LaunchAgents/de.oefelein.time-tracker.plist
