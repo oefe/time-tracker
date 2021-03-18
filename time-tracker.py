@@ -103,10 +103,7 @@ def get_cumulative_work(spans: Iterable[Span]) -> datetime.timedelta:
     return sum((s.duration() for s in spans), datetime.timedelta())
 
 def format_timedelta(td: datetime.timedelta) -> str:
-    # work around https://github.com/microsoft/pyright/issues/1629
-    # hours, rest = divmod(td, datetime.timedelta(hours=1))
-    hours = td // datetime.timedelta(hours=1)
-    rest = td % datetime.timedelta(hours=1) 
+    hours, rest = divmod(td, datetime.timedelta(hours=1))
     minutes = rest // datetime.timedelta(minutes=1)
     return f"{hours}:{minutes:02}"
 
