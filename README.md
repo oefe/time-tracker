@@ -13,7 +13,11 @@ Before installing time-tracker, make sure you have the following installed:
 
 ### Run Install Script
 
-To install, simply run `./install-time-tracker`
+To install, simply run:
+
+```source ./install-time-tracker```
+
+> **Note**: `install-time-tracker` must be sourced, as `conda activate` requires an interactive shell
 
 This will do the following:
 

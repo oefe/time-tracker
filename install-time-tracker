@@ -1,6 +1,3 @@
-#! /bin/sh
-set -Eeuo pipefail
-
 echo Setting up conda environment
 conda env create 
 conda activate time-tracker
