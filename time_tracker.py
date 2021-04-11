@@ -14,7 +14,7 @@ import enum
 import os
 import os.path
 import sys
-from typing import Iterable, NamedTuple, Optional, Sequence
+from typing import Iterable, NamedTuple, Optional, Sequence, TextIO
 
 BARS = " ▁▂▃▄▅▆▇█"
 LOGDIR = os.path.expanduser("~/.time-tracker")
@@ -63,11 +63,14 @@ def parse_log_line(line: str) -> Event:
         activity = Activity.IDLE
     return Event(datetime.datetime.fromisoformat(timestamp), name, activity)
 
+def parse_log(log: TextIO):
+    lines = log.readlines()
+    return [parse_log_line(line) for line in lines]
+
 def load_log(day: Optional[datetime.date]=None) -> Sequence[Event]:
     filename = get_log_filename(day)
     with open(filename) as log:
-        lines = log.readlines()
-    return [parse_log_line(line) for line in lines]
+        return parse_log(log)
 
 def get_work_spans(events: Sequence[Event]) -> Iterable[Span]:
     working = False
