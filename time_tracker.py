@@ -217,10 +217,11 @@ def run_agent():
         print(e)
         log_event("AgentException", Activity.IDLE)
 
-if len(sys.argv) > 1:
-    if sys.argv[1] == "agent":
-        run_agent()
+if __name__ == "__main__":
+    if len(sys.argv) > 1:
+        if sys.argv[1] == "agent":
+            run_agent()
+        else:
+            print(f"Unknown command: {sys.argv[1]}")
     else:
-        print(f"Unknown command: {sys.argv[1]}")
-else:
-    write_menu()
+        write_menu()
