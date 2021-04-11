@@ -2,7 +2,7 @@ import datetime
 from io import StringIO
 import unittest
 
-from time_tracker import *
+from time_tracker import Activity, Event, parse_log_line, parse_log
 
 class TestParsing(unittest.TestCase):
 

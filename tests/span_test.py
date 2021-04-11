@@ -2,7 +2,7 @@ import datetime
 from typing import List
 import unittest
 
-from time_tracker import *
+from time_tracker import Activity, Event, Span, get_work_spans
 
 class TestSpan(unittest.TestCase):
 
