@@ -72,7 +72,9 @@ def load_log(day: Optional[datetime.date]=None) -> Sequence[Event]:
     with open(filename) as log:
         return parse_log(log)
 
-def get_work_spans(events: Sequence[Event]) -> Iterable[Span]:
+def get_work_spans(
+        events: Sequence[Event],
+        now: datetime.datetime=datetime.datetime.now()) -> Iterable[Span]:
     working = False
     start = datetime.datetime.now()
     for (d, _, activity) in events:
@@ -85,7 +87,7 @@ def get_work_spans(events: Sequence[Event]) -> Iterable[Span]:
                 working = False
                 yield Span (start, d)
     if working:
-        yield Span(start, datetime.datetime.now())
+        yield Span(start, now)
 
 def filter_short_breaks(spans: Iterable[Span]) -> Iterable[Span]:
     it = iter(spans)
