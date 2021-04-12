@@ -5,6 +5,10 @@ from time_tracker import Span, filter_spans
 
 class TestFilter(unittest.TestCase):
 
+    def test_empty(self):
+        output = filter_spans([])
+        self.assertEqual(output, [])
+
     def test_short_break(self):
         input = [
             Span(datetime.datetime(2020, 4, 11, 18, 10), datetime.datetime(2020, 4, 11, 18, 20)),

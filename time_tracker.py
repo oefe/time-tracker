@@ -91,7 +91,11 @@ def get_work_spans(
 
 def filter_short_breaks(spans: Iterable[Span]) -> Iterable[Span]:
     it = iter(spans)
+    try:
         current = next(it)
+    except StopIteration:
+        return []
+        
     for nxt in it:
         if nxt.start - current.end < SHORT_BREAK:
             current = Span(current.start, nxt.end)
