@@ -1,7 +1,7 @@
 import datetime
 import unittest
 
-from time_tracker import Span, filter_short_breaks, filter_short_work
+from time_tracker import Span, filter_spans
 
 class TestFilter(unittest.TestCase):
 
@@ -10,7 +10,7 @@ class TestFilter(unittest.TestCase):
             Span(datetime.datetime(2020, 4, 11, 18, 10), datetime.datetime(2020, 4, 11, 18, 20)),
             Span(datetime.datetime(2020, 4, 11, 18, 21), datetime.datetime(2020, 4, 11, 18, 40)),
         ]
-        output = list(filter_short_breaks(input))
+        output = filter_spans(input)
         expected = [
             Span(datetime.datetime(2020, 4, 11, 18, 10), datetime.datetime(2020, 4, 11, 18, 40)),
         ]
@@ -21,20 +21,20 @@ class TestFilter(unittest.TestCase):
             Span(datetime.datetime(2020, 4, 11, 18, 10), datetime.datetime(2020, 4, 11, 18, 20)),
             Span(datetime.datetime(2020, 4, 11, 18, 30), datetime.datetime(2020, 4, 11, 18, 40)),
         ]
-        output = list(filter_short_breaks(input))
+        output = filter_spans(input)
         self.assertEqual(output, input)
 
     def test_short_work(self):
         input = [
             Span(datetime.datetime(2020, 4, 11, 18, 10), datetime.datetime(2020, 4, 11, 18, 11)),
         ]
-        output = list(filter_short_work(input))
+        output = filter_spans(input)
         self.assertEqual(output, [])        
 
     def test_long_work(self):
         input = [
             Span(datetime.datetime(2020, 4, 11, 18, 10), datetime.datetime(2020, 4, 11, 18, 20)),
         ]
-        output = list(filter_short_work(input))
+        output = filter_spans(input)
         self.assertEqual(output, input)        
                   

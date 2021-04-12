@@ -14,7 +14,7 @@ import enum
 import os
 import os.path
 import sys
-from typing import Iterable, NamedTuple, Optional, Sequence, TextIO
+from typing import Iterable, List, NamedTuple, Optional, Sequence, TextIO
 
 BARS = " ▁▂▃▄▅▆▇█"
 LOGDIR = os.path.expanduser("~/.time-tracker")
@@ -91,7 +91,7 @@ def get_work_spans(
 
 def filter_short_breaks(spans: Iterable[Span]) -> Iterable[Span]:
     it = iter(spans)
-    current = next(it)
+        current = next(it)
     for nxt in it:
         if nxt.start - current.end < SHORT_BREAK:
             current = Span(current.start, nxt.end)
@@ -102,6 +102,9 @@ def filter_short_breaks(spans: Iterable[Span]) -> Iterable[Span]:
 
 def filter_short_work(spans: Iterable[Span]) -> Iterable[Span]:
     return (s for s in spans if s.duration() > SHORT_WORK)
+
+def filter_spans(spans: Iterable[Span]) -> List[Span]:
+    return list(filter_short_work(filter_short_breaks(spans)))
 
 def get_cumulative_work(spans: Iterable[Span]) -> datetime.timedelta:
     #TODO adjust durations for required breaks
@@ -153,8 +156,7 @@ def write_menu():
         print(e)
         return
     spans = get_work_spans(events)
-    spans = filter_short_breaks(spans)
-    spans = list(filter_short_work(spans))
+    spans = filter_spans(spans)
     cumulative_work_today = get_cumulative_work(spans)
     hours = cumulative_work_today / datetime.timedelta(hours=1)
     messages = list(get_messages(spans, hours))
