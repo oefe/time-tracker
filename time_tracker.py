@@ -146,9 +146,9 @@ def get_messages(spans: Sequence[Span], total_hours: float) -> Iterable[Message]
     elif end.hour >= 21:
         yield Message(Level.WARNING, "Time to stop working?")
 
-def write_menu():
+def write_menu(day: Optional[datetime.date]=None):
     try:
-        events = load_log()
+        events = load_log(day)
     except FileNotFoundError:
         print ("❓")
         print("---")
@@ -171,6 +171,17 @@ def write_menu():
         print(f"{message.text}|{message.level.format()}")
     for s in spans:
         print(s)
+    if day is None:
+        print(f"Report|bash={sys.argv[0]} param0=report")
+
+def write_report():
+    today = datetime.date.today()
+    day = datetime.date(today.year, today.month, 1)
+    while day < today:
+        if day.isoweekday() < 6:
+            print(f"\n{day:%d.%m.%Y - %A}: ", end="")
+            write_menu(day)
+        day += datetime.timedelta(days=1)
     
 def run_agent():
     import AppKit
@@ -232,6 +243,8 @@ if __name__ == "__main__":
     if len(sys.argv) > 1:
         if sys.argv[1] == "agent":
             run_agent()
+        elif sys.argv[1] == "report":
+            write_report()
         else:
             print(f"Unknown command: {sys.argv[1]}")
     else:
