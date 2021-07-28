@@ -176,7 +176,8 @@ def write_menu(day: Optional[datetime.date]=None):
 
 def write_report():
     today = datetime.date.today()
-    day = datetime.date(today.year, today.month, 1)
+    a_week_ago = today - datetime.timedelta(days=7)
+    day = datetime.date(a_week_ago.year, a_week_ago.month, 1)
     while day < today:
         if day.isoweekday() < 6:
             print(f"\n{day:%d.%m.%Y - %A}: ", end="")
