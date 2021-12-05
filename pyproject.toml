@@ -1,0 +1,20 @@
+[tool.poetry]
+name = "time-tracker"
+version = "0.1.0"
+description = "Utilities to track my working hours"
+authors = ["Martina Oefelein"]
+license = "MIT"
+
+[tool.poetry.dependencies]
+python = "^3.9"
+pyobjc-framework-Cocoa = "^7.3"
+pyobjc-core = "^7.3"
+
+[tool.poetry.dev-dependencies]
+
+[tool.poetry.scripts]
+time_tracker = 'time_tracker:main'
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"

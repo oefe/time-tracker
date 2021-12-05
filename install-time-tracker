@@ -1,9 +1,10 @@
-echo Setting up conda environment
-conda env create 
-conda activate time-tracker
+#! /bin/sh
+echo Setting up poetry environment
+poetry install
+pipx install .
 
 echo installing SwiftBar Plugin
-ln -s `pwd`/time_tracker.py `defaults read com.ameba.SwiftBar PluginDirectory`/time_tracker.1m.py
+ln -s `which time_tracker` `defaults read com.ameba.SwiftBar PluginDirectory`/time_tracker.1m.py
 
 echo installing launch agent
 cat <<EOF > ~/Library/LaunchAgents/de.oefelein.time-tracker.plist
@@ -15,12 +16,13 @@ cat <<EOF > ~/Library/LaunchAgents/de.oefelein.time-tracker.plist
 	<string>de.oefelein.time-tracker</string>
 	<key>ProgramArguments</key>
 	<array>
-		<string>`which python`</string>
-		<string>$PWD/time_tracker.py</string>
+		<string>`which time_tracker`</string>
 		<string>agent</string>
 	</array>
     <key>KeepAlive</key>
     <true/>
+	<key>WorkingDirectory</key>
+	<string>$PWD</string>
 </dict>
 </plist>
 EOF

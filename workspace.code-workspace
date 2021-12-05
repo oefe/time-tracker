@@ -7,10 +7,13 @@
 			"path": "../../.time-tracker"
 		},
 		{
-			"path": "../bitbar-plugins/Enabled"
+			"path": "/Users/moefelei/Tools/SwiftBar-Plugins/"
 		}
 	],
 	"settings": {
-		"python.languageServer": "Pylance"
+		"python.languageServer": "Pylance",
+		"cSpell.words": [
+			"moefelei"
+		]
 	}
 }

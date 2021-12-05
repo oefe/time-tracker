@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # <bitbar.title>Time Tracker</bitbar.title>
 # <bitbar.version>v0.1</bitbar.version>
 # <bitbar.author>Martina Oefelein</bitbar.author>
@@ -240,7 +239,7 @@ def run_agent():
         print(e)
         log_event("AgentException", Activity.IDLE)
 
-if __name__ == "__main__":
+def main():
     if len(sys.argv) > 1:
         if sys.argv[1] == "agent":
             run_agent()
@@ -250,3 +249,6 @@ if __name__ == "__main__":
             print(f"Unknown command: {sys.argv[1]}")
     else:
         write_menu()
+
+if __name__ == "__main__":
+    main()
