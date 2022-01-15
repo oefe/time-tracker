@@ -7,7 +7,7 @@ license = "MIT"
 
 [tool.poetry.dependencies]
 python = "^3.9"
-pyobjc-framework-Cocoa = "^7.3"
+pyobjc-framework-Cocoa = "^8.1"
 pyobjc-core = "^8.1"
 
 [tool.poetry.dev-dependencies]
