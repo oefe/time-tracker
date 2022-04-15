@@ -93,7 +93,7 @@ def filter_short_breaks(spans: Iterable[Span]) -> Iterable[Span]:
     try:
         current = next(it)
     except StopIteration:
-        return []
+        return ()
         
     for nxt in it:
         if nxt.start - current.end < SHORT_BREAK:
