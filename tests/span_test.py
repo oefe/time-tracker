@@ -12,7 +12,7 @@ class TestSpan(unittest.TestCase):
     
     def test_format(self):
         s = Span(datetime.datetime(2021, 4, 11, 11, 6, 5), datetime.datetime(2021, 4, 11, 11, 7, 21))
-        self.assertEqual(f"{s}", "11:06-11:07 (0:01)")
+        self.assertEqual(f"{s}", "11:06-11:07 (0.02)")
 
     def test_get_spans_empty(self):
         events: List[Event] = []
