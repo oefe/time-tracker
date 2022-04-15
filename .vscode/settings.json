@@ -16,6 +16,7 @@
         "Oefelein",
         "pipx",
         "Pylance",
-        "pyobjc"
+        "pyobjc",
+        "sfimage"
     ]
 }

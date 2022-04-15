@@ -39,38 +39,35 @@ class Event(NamedTuple):
     timestamp: datetime.datetime
     name: str
     activity: Activity
+    project: str = ""
 
 class Span(NamedTuple):
     start: datetime.datetime
     end: datetime.datetime
+    project: str = ""
 
     def duration(self) -> datetime.timedelta:
         return self.end - self.start
     
     def __str__(self) -> str:
-        return f"{self.start:%H:%M}-{self.end:%H:%M} ({self.duration() / ONE_HOUR:.2f})"
+        return f"{self.start:%H:%M}-{self.end:%H:%M} ({self.duration() / ONE_HOUR:.2f}){' ' if self.project else ''}{self.project}"
 
 def get_log_filename(day: Optional[datetime.date]=None) -> str:
     if day is None:
         day = datetime.date.today()
     return os.path.join(LOGDIR, f"{day}.log")
     
-def log_event(name: str, activity: Activity):
+def log_event(name: str, activity: Activity, project: str=""):
     os.makedirs(LOGDIR, exist_ok=True)
     now = datetime.datetime.now()
     filename = get_log_filename(now.date())
     with open(filename, mode="a") as log:
-        print(now, name, activity.name, sep="\t", file=log)
+        print(now, name, activity.name, project, sep="\t", file=log)
 
 def parse_log_line(line: str) -> Event:
-    timestamp, name, *rest = line.strip().split("\t")
-    if rest:
-        activity = Activity[rest[0]]
-    elif name == "ScreenUnlock":
-        activity = Activity.WORKING
-    else:
-        activity = Activity.IDLE
-    return Event(datetime.datetime.fromisoformat(timestamp), name, activity)
+    timestamp, name, activity, *rest = line.strip().split("\t")
+    project = rest[0] if rest else ""
+    return Event(datetime.datetime.fromisoformat(timestamp), name, Activity[activity], project)
 
 def parse_log(log: TextIO):
     lines = log.readlines()
@@ -81,22 +78,36 @@ def load_log(day: Optional[datetime.date]=None) -> Sequence[Event]:
     with open(filename) as log:
         return parse_log(log)
 
+@dataclass
+class Project:
+    name: str
+    symbol: str
+
+def load_projects()->List[Project]:
+    with open(os.path.join(LOGDIR, "projects.txt"), "rt") as f:
+        lines = f.readlines()
+        projects = [Project(*l.split()) for l in lines]
+        return projects
+
 def get_work_spans(
         events: Sequence[Event],
         now: datetime.datetime=datetime.datetime.now()) -> Iterable[Span]:
     working = False
     start = datetime.datetime.now()
-    for (d, _, activity) in events:
+    project = ""
+    for (d, _, activity, new_project) in events:
         if activity is Activity.WORKING:
             if not working:
                 working = True
                 start = d
+            if new_project:
+                project = new_project
         else:
             if working:
                 working = False
-                yield Span (start, d)
+                yield Span (start, d, project)
     if working:
-        yield Span(start, now)
+        yield Span(start, now, project)
 
 def filter_short_breaks(spans: Iterable[Span]) -> Iterable[Span]:
     it = iter(spans)
@@ -106,8 +117,8 @@ def filter_short_breaks(spans: Iterable[Span]) -> Iterable[Span]:
         return ()
         
     for nxt in it:
-        if nxt.start - current.end < SHORT_BREAK:
-            current = Span(current.start, nxt.end)
+        if nxt.start - current.end < SHORT_BREAK and nxt.project == current.project:
+            current = Span(current.start, nxt.end, current.project)
         else:
             yield current
             current = nxt
@@ -148,7 +159,7 @@ def get_messages(spans: Sequence[Span], total_hours: float) -> Iterable[Message]
         yield Message(Level.WARNING, "You really worked enough for today")
     elif 7.75 < total_hours < 8.25:
         yield Message(Level.PRAISE, "You worked enough for today")
-    _, end = spans[-1]
+    _start, end, _project = spans[-1]
     if end.hour >= 22:
         yield Message(Level.ERROR, "Stop working now, it's after 10pm!")
     elif end.hour >= 21:
@@ -167,7 +178,7 @@ class DayResults:
             self.spans = filter_spans(get_work_spans(events))
             self.total_hours = get_cumulative_work(self.spans)
             self.messages = list(get_messages(self.spans, self.total_hours))
-            self.level = max([m.level for m in self.messages], default=Level.INFO) 
+            self.level = max([m.level for m in self.messages], default=Level.INFO)
         except FileNotFoundError:
             self.messages = [Message(Level.ERROR, "No log file")]
         except Exception as e:
@@ -176,14 +187,24 @@ class DayResults:
 
 def write_menu():
     results = DayResults()
+    projects = load_projects()
 
-    print(results.level.ansi_format(f"{results.total_hours:.2f} {BARS[min(int(results.total_hours), 8)]}") + "|ansi=True")
+    project_symbol = "questionmark.circle"
+    last_project_name = ""
+    todays_projects = [s.project for s in results.spans if s.project]
+    if todays_projects:
+        last_project_name = todays_projects[-1]
+        project_symbol = [p.symbol for p in projects if p.name == last_project_name][0]
+    print(results.level.ansi_format(f"{results.total_hours:.2f} {BARS[min(int(results.total_hours), 8)]}") + f"|ansi=True sfimage={project_symbol}")
     print("---")
     for message in results.messages:
         print(f"{message.level.ansi_format(message.text)}|ansi=True")
     for s in results.spans:
         print(s)
     print(f"Report|bash={sys.argv[0]} param0=report")
+    print("---")
+    for p in projects:
+        print(f"{p.name}|symbolize=True checked={p.name == last_project_name} bash={sys.argv[0]} param0=project param1={p.name} terminal=False refresh=True sfimage={p.symbol}")
 
 def write_report():
     today = datetime.date.today()
@@ -199,6 +220,9 @@ def write_report():
             for message in results.messages:
                 print(message.level.ansi_format(message.text))
         day += datetime.timedelta(days=1)
+
+def log_project(project: str):
+    log_event("project", Activity.WORKING, project)
     
 def run_agent():
     import AppKit
@@ -262,6 +286,8 @@ def main():
             run_agent()
         elif sys.argv[1] == "report":
             write_report()
+        elif sys.argv[1] == "project":
+            log_project(sys.argv[2])
         else:
             print(f"Unknown command: {sys.argv[1]}")
     else:
