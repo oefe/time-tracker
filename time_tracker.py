@@ -18,10 +18,20 @@ from typing import Iterable, List, NamedTuple, Optional, Sequence, TextIO
 BARS = " ▁▂▃▄▅▆▇█"
 LOGDIR = os.path.expanduser("~/.time-tracker")
 
+ANSI_RESET="\033[0m"
+ANSI_RED="\033[31m"
+ANSI_ORANGE="\033[33m"
+ANSI_GREEN="\033[32m"
+ANSI_BOLD="\033[1m"
+ANSI_SHADE_EVEN="\033[48;5;255m"
+ANSI_SHADE_ODD=""
+ANSI_SHADES = [ANSI_SHADE_EVEN, ANSI_SHADE_ODD]
+
 class Activity (enum.Enum):
     IDLE = 0
     WORKING = 1
 
+ONE_HOUR = datetime.timedelta(hours=1)
 SHORT_BREAK = datetime.timedelta(minutes=3)
 SHORT_WORK = datetime.timedelta(minutes=1)
 
@@ -38,7 +48,7 @@ class Span(NamedTuple):
         return self.end - self.start
     
     def __str__(self) -> str:
-        return f"{self.start:%H:%M}-{self.end:%H:%M} ({format_timedelta(self.duration())})"
+        return f"{self.start:%H:%M}-{self.end:%H:%M} ({self.duration() / ONE_HOUR:.2f})"
 
 def get_log_filename(day: Optional[datetime.date]=None) -> str:
     if day is None:
@@ -109,22 +119,22 @@ def filter_short_work(spans: Iterable[Span]) -> Iterable[Span]:
 def filter_spans(spans: Iterable[Span]) -> List[Span]:
     return list(filter_short_work(filter_short_breaks(spans)))
 
-def get_cumulative_work(spans: Iterable[Span]) -> datetime.timedelta:
+def get_cumulative_work(spans: Iterable[Span]) -> float:
     #TODO adjust durations for required breaks
-    return sum((s.duration() for s in spans), datetime.timedelta())
-
-def format_timedelta(td: datetime.timedelta) -> str:
-    hours = td / datetime.timedelta(hours=1)
-    return f"{hours:.2f}"
+    total = sum((s.duration() for s in spans), datetime.timedelta())
+    return total / ONE_HOUR
 
 class Level(enum.IntEnum):
     INFO = 0
     PRAISE = 1
     WARNING = 2
     ERROR = 3
-
-    def format(self):
-        return ["", "color=green", "color=orange", "color=red"][self.value]
+    
+    def ansi_color_code(self) -> str:
+        return [ANSI_RESET, ANSI_GREEN, ANSI_ORANGE, ANSI_RED][self.value]
+    
+    def ansi_format(self, text: str) -> str:
+        return f"{self.ansi_color_code()}{text}{ANSI_RESET}"
 
 @dataclass
 class Message:
@@ -144,33 +154,36 @@ def get_messages(spans: Sequence[Span], total_hours: float) -> Iterable[Message]
     elif end.hour >= 21:
         yield Message(Level.WARNING, "Time to stop working?")
 
-def write_menu(day: Optional[datetime.date]=None):
-    try:
-        events = load_log(day)
-    except FileNotFoundError:
-        print ("❓")
-        print("---")
-        print("No log file")
-        return
-    except Exception as e:
-        print ("⁉️")
-        print("---")
-        print(e)
-        return
-    spans = get_work_spans(events)
-    spans = filter_spans(spans)
-    cumulative_work_today = get_cumulative_work(spans)
-    hours = cumulative_work_today / datetime.timedelta(hours=1)
-    messages = list(get_messages(spans, hours))
-    level = max([m.level for m in messages], default=Level.INFO)
-    print(f"{format_timedelta(cumulative_work_today)} {BARS[min(int(hours), 8)]}|{level.format()}")
+class DayResults:
+    spans: List[Span] = []
+    total_hours: float = 0.0
+    messages: List[Message] = []
+    level: Level= Level.ERROR
+
+    def __init__(self, day: Optional[datetime.date]=None) -> None:
+
+        try:
+            events = load_log(day)
+            self.spans = filter_spans(get_work_spans(events))
+            self.total_hours = get_cumulative_work(self.spans)
+            self.messages = list(get_messages(self.spans, self.total_hours))
+            self.level = max([m.level for m in self.messages], default=Level.INFO) 
+        except FileNotFoundError:
+            self.messages = [Message(Level.ERROR, "No log file")]
+        except Exception as e:
+            self.messages = [Message(Level.ERROR, str(e))]
+             
+
+def write_menu():
+    results = DayResults()
+
+    print(results.level.ansi_format(f"{results.total_hours:.2f} {BARS[min(int(results.total_hours), 8)]}") + "|ansi=True")
     print("---")
-    for message in messages:
-        print(f"{message.text}|{message.level.format()}")
-    for s in spans:
+    for message in results.messages:
+        print(f"{message.level.ansi_format(message.text)}|ansi=True")
+    for s in results.spans:
         print(s)
-    if day is None:
-        print(f"Report|bash={sys.argv[0]} param0=report")
+    print(f"Report|bash={sys.argv[0]} param0=report")
 
 def write_report():
     today = datetime.date.today()
@@ -178,8 +191,13 @@ def write_report():
     day = datetime.date(a_week_ago.year, a_week_ago.month, 1)
     while day < today:
         if day.isoweekday() < 6:
-            print(f"\n{day:%d.%m.%Y - %A}: ", end="")
-            write_menu(day)
+            results = DayResults(day=day)
+            print()
+            print(f"{ANSI_BOLD}{day:%d.%m.%Y - %A}: {results.total_hours:.2f}{ANSI_RESET}")
+            for i, s in enumerate(results.spans):
+                print(f"{ANSI_SHADES[i % 2]}{s}{ANSI_RESET}")
+            for message in results.messages:
+                print(message.level.ansi_format(message.text))
         day += datetime.timedelta(days=1)
     
 def run_agent():
