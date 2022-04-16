@@ -69,14 +69,17 @@ def parse_log_line(line: str) -> Event:
     project = rest[0] if rest else ""
     return Event(datetime.datetime.fromisoformat(timestamp), name, Activity[activity], project)
 
-def parse_log(log: TextIO):
+def parse_log(log: TextIO) -> Sequence[Event]:
     lines = log.readlines()
     return [parse_log_line(line) for line in lines]
 
 def load_log(day: Optional[datetime.date]=None) -> Sequence[Event]:
     filename = get_log_filename(day)
-    with open(filename) as log:
-        return parse_log(log)
+    try:
+        with open(filename) as log:
+            return parse_log(log)
+    except FileNotFoundError:
+        return []
 
 @dataclass
 class Project:
@@ -159,11 +162,14 @@ def get_messages(spans: Sequence[Span], total_hours: float) -> Iterable[Message]
         yield Message(Level.WARNING, "You really worked enough for today")
     elif 7.75 < total_hours < 8.25:
         yield Message(Level.PRAISE, "You worked enough for today")
-    _start, end, _project = spans[-1]
-    if end.hour >= 22:
-        yield Message(Level.ERROR, "Stop working now, it's after 10pm!")
-    elif end.hour >= 21:
-        yield Message(Level.WARNING, "Time to stop working?")
+    
+    if spans:    
+        _start, end, _project = spans[-1]
+        if end.hour >= 22:
+            yield Message(Level.ERROR, "Stop working now, it's after 10pm!")
+        elif end.hour >= 21:
+            yield Message(Level.WARNING, "Time to stop working?")
+
 
 class DayResults:
     spans: List[Span] = []
@@ -171,22 +177,21 @@ class DayResults:
     messages: List[Message] = []
     level: Level= Level.ERROR
 
-    def __init__(self, day: Optional[datetime.date]=None) -> None:
-
-        try:
-            events = load_log(day)
-            self.spans = filter_spans(get_work_spans(events))
-            self.total_hours = get_cumulative_work(self.spans)
-            self.messages = list(get_messages(self.spans, self.total_hours))
-            self.level = max([m.level for m in self.messages], default=Level.INFO)
-        except FileNotFoundError:
-            self.messages = [Message(Level.ERROR, "No log file")]
-        except Exception as e:
-            self.messages = [Message(Level.ERROR, str(e))]
+    def __init__(self, events: Sequence[Event]):
+        if events:
+            try:
+                self.spans = filter_spans(get_work_spans(events))
+                self.total_hours = get_cumulative_work(self.spans)
+                self.messages = list(get_messages(self.spans, self.total_hours))
+                self.level = max([m.level for m in self.messages], default=Level.INFO)
+            except Exception as e:
+                self.messages = [Message(Level.ERROR, str(e))]
+        else:
+            self.messages= [Message(Level.ERROR, "No log file")]
              
 
 def write_menu():
-    results = DayResults()
+    results = DayResults(load_log())
     projects = load_projects()
 
     project_symbol = "questionmark.circle"
@@ -212,7 +217,7 @@ def write_report():
     day = datetime.date(a_week_ago.year, a_week_ago.month, 1)
     while day < today:
         if day.isoweekday() < 6:
-            results = DayResults(day=day)
+            results = DayResults(load_log(day=day))
             print()
             print(f"{ANSI_BOLD}{day:%d.%m.%Y - %A}: {results.total_hours:.2f}{ANSI_RESET}")
             for i, s in enumerate(results.spans):
