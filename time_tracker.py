@@ -57,9 +57,10 @@ def get_log_filename(day: Optional[datetime.date]=None) -> str:
         day = datetime.date.today()
     return os.path.join(LOGDIR, f"{day}.log")
     
-def log_event(name: str, activity: Activity, project: str=""):
+def log_event(name: str, activity: Activity, project: str="", now: Optional[datetime.datetime] = None):
     os.makedirs(LOGDIR, exist_ok=True)
-    now = datetime.datetime.now()
+    if not now:
+        now = datetime.datetime.now()
     filename = get_log_filename(now.date())
     with open(filename, mode="a") as log:
         print(now, name, activity.name, project, sep="\t", file=log)
@@ -212,7 +213,8 @@ def write_menu():
     print(f"Report|bash={sys.argv[0]} param0=report")
     print("---")
     for p in projects:
-        print(f"{p.name}|symbolize=True checked={p.name == last_project_name} bash={sys.argv[0]} param0=project param1={p.name} terminal=False refresh=True sfimage={p.symbol}")
+        print(f"{p.name}|checked={p.name == last_project_name} bash={sys.argv[0]} param0=project param1={p.name} terminal=False refresh=True sfimage={p.symbol}")
+        print(f"{p.name} (back)|bash={sys.argv[0]} param0=project-back param1={p.name} terminal=False refresh=True sfimage={p.symbol} alternate=True")
 
 def write_report():
     today = datetime.date.today()
@@ -231,7 +233,12 @@ def write_report():
 
 def log_project(project: str):
     log_event("project", Activity.WORKING, project)
-    
+
+def log_project_back(project: str):
+    events = load_log()
+    timestamp = events[0].timestamp if events else None
+    log_event("project-back", Activity.WORKING, project, now=timestamp)
+
 def run_agent():
     import AppKit
     import Foundation
@@ -296,6 +303,8 @@ def main():
             write_report()
         elif sys.argv[1] == "project":
             log_project(sys.argv[2])
+        elif sys.argv[1] == "project-back":
+            log_project_back(sys.argv[2])
         else:
             print(f"Unknown command: {sys.argv[1]}")
     else:
