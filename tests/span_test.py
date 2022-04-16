@@ -118,3 +118,45 @@ class TestSpan(unittest.TestCase):
         ]
         self.assertEqual(spans, expected)
   
+    def test_get_spans_switching_projects(self):
+        events = [
+            Event(datetime.datetime(2021, 4, 11, 17, 30), "", Activity.WORKING, "Project A"),
+            Event(datetime.datetime(2021, 4, 11, 17, 40), "", Activity.WORKING, "Project B"),
+            Event(datetime.datetime(2021, 4, 11, 17, 45), "", Activity.WORKING, "Project A"),
+            Event(datetime.datetime(2021, 4, 11, 17, 50), "", Activity.IDLE)
+        ]
+        spans = list(get_work_spans(events))
+        expected = [
+            Span(events[0].timestamp, events[1].timestamp, events[0].project),
+            Span(events[1].timestamp, events[2].timestamp, events[1].project),
+            Span(events[2].timestamp, events[3].timestamp, events[2].project),
+        ]
+        self.assertEqual(spans, expected)
+  
+    def test_get_spans_break_and_switching_projects(self):
+        events = [
+            Event(datetime.datetime(2021, 4, 11, 17, 30), "", Activity.WORKING, "Project A"),
+            Event(datetime.datetime(2021, 4, 11, 17, 40), "", Activity.IDLE),
+            Event(datetime.datetime(2021, 4, 11, 17, 45), "", Activity.WORKING, "Project B"),
+            Event(datetime.datetime(2021, 4, 11, 17, 50), "", Activity.IDLE)
+        ]
+        spans = list(get_work_spans(events))
+        expected = [
+            Span(events[0].timestamp, events[1].timestamp, events[0].project),
+            Span(events[2].timestamp, events[3].timestamp, events[2].project),
+        ]
+        self.assertEqual(spans, expected)
+  
+    def test_get_spans_switching_projects_backdated(self):
+        events = [
+            Event(datetime.datetime(2021, 4, 11, 17, 30), "", Activity.WORKING, "Project A"),
+            Event(datetime.datetime(2021, 4, 11, 17, 30), "", Activity.WORKING, "Project B"),
+            Event(datetime.datetime(2021, 4, 11, 17, 45), "", Activity.WORKING, "Project A"),
+            Event(datetime.datetime(2021, 4, 11, 17, 50), "", Activity.IDLE)
+        ]
+        spans = list(get_work_spans(events))
+        expected = [
+            Span(events[0].timestamp, events[2].timestamp, events[1].project),
+            Span(events[2].timestamp, events[3].timestamp, events[2].project),
+        ]
+        self.assertEqual(spans, expected)

@@ -103,7 +103,10 @@ def get_work_spans(
             if not working:
                 working = True
                 start = e.timestamp
-            if e.project:
+            if e.project and e.project != project:
+                if e.timestamp > start:
+                    yield Span(start, e.timestamp, project)
+                    start = e.timestamp
                 project = e.project
         else:
             if working:
