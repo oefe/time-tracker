@@ -98,17 +98,17 @@ def get_work_spans(
     working = False
     start = datetime.datetime.now()
     project = ""
-    for (d, _, activity, new_project) in events:
-        if activity is Activity.WORKING:
+    for e in events:
+        if e.activity is Activity.WORKING:
             if not working:
                 working = True
-                start = d
-            if new_project:
-                project = new_project
+                start = e.timestamp
+            if e.project:
+                project = e.project
         else:
             if working:
                 working = False
-                yield Span (start, d, project)
+                yield Span (start, e.timestamp, project)
     if working:
         yield Span(start, now, project)
 
