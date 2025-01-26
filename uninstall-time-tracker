@@ -1,0 +1,12 @@
+#! /bin/sh
+
+echo uninstalling launch agent
+launchctl unload ~/Library/LaunchAgents/de.oefelein.time-tracker.plist
+
+echo uninstalling SwiftBar Plugin
+rm `defaults read com.ameba.SwiftBar PluginDirectory`/time_tracker.1m.py
+
+echo Uninstalling uv environment
+uv tool uninstall time_tracker
+
+echo done!
