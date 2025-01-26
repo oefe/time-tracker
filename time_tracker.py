@@ -239,67 +239,10 @@ def log_project_back(project: str):
     timestamp = events[0].timestamp if events else None
     log_event("project-back", Activity.WORKING, project, now=timestamp)
 
-def run_agent():
-    import AppKit
-    import Foundation
-    from PyObjCTools import AppHelper
-    class Observer(Foundation.NSObject):
-        def onActivation_(self, notification: Foundation.NSNotification):
-            log_event(notification.name(), Activity.WORKING)    
-
-        def onDeactivation_(self, notification: Foundation.NSNotification):
-            log_event(notification.name(), Activity.IDLE)    
-
-    nc = Foundation.NSDistributedNotificationCenter.defaultCenter()
-    observer = Observer.new()
-    nc.addObserver_selector_name_object_suspensionBehavior_(
-        observer,
-        'onDeactivation:',
-        'com.apple.screenIsLocked',
-        None,
-        Foundation.NSNotificationSuspensionBehaviorDeliverImmediately)
-    nc.addObserver_selector_name_object_suspensionBehavior_(
-        observer,
-        'onActivation:',
-        'com.apple.screenIsUnlocked',
-        None,
-        Foundation.NSNotificationSuspensionBehaviorDeliverImmediately)
-    wnc = AppKit.NSWorkspace.sharedWorkspace().notificationCenter()
-    for notification in (
-        AppKit.NSWorkspaceSessionDidBecomeActiveNotification,
-        AppKit.NSWorkspaceDidWakeNotification,
-        AppKit.NSWorkspaceScreensDidWakeNotification,        
-    ):
-        wnc.addObserver_selector_name_object_(
-            observer,
-            'onActivation:',
-            notification,
-            None)
-    for notification in (
-        AppKit.NSWorkspaceSessionDidResignActiveNotification,
-        AppKit.NSWorkspaceWillPowerOffNotification,
-        AppKit.NSWorkspaceWillSleepNotification,
-        AppKit.NSWorkspaceScreensDidSleepNotification,
-    ):
-        wnc.addObserver_selector_name_object_(
-            observer,
-            'onDeactivation:',
-            notification,
-            None)
-    log_event("AgentStart", Activity.WORKING)
-    try:
-        AppHelper.runConsoleEventLoop()
-    except KeyboardInterrupt:
-        log_event("AgentStop", Activity.IDLE)
-    except Exception as e:
-        print(e)
-        log_event("AgentException", Activity.IDLE)
 
 def main():
     if len(sys.argv) > 1:
-        if sys.argv[1] == "agent":
-            run_agent()
-        elif sys.argv[1] == "report":
+        if sys.argv[1] == "report":
             write_report()
         elif sys.argv[1] == "project":
             log_project(sys.argv[2])
