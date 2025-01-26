@@ -1,10 +1,9 @@
 #! /bin/sh
-echo Setting up poetry environment
-poetry install
-pipx install .
+echo Setting up uv environment
+uv tool install .
 
 echo installing SwiftBar Plugin
-ln -s `which time_tracker` `defaults read com.ameba.SwiftBar PluginDirectory`/time_tracker.1m.py
+ln -f -s `which time_tracker` `defaults read com.ameba.SwiftBar PluginDirectory`/time_tracker.1m.py
 
 echo installing launch agent
 cat <<EOF > ~/Library/LaunchAgents/de.oefelein.time-tracker.plist
@@ -16,7 +15,7 @@ cat <<EOF > ~/Library/LaunchAgents/de.oefelein.time-tracker.plist
 	<string>de.oefelein.time-tracker</string>
 	<key>ProgramArguments</key>
 	<array>
-		<string>$PWD/time-tracker-agent.py</string>
+		<string>`which time_tracker_agent`</string>
 	</array>
     <key>KeepAlive</key>
     <true/>

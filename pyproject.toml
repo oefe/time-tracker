@@ -1,18 +1,21 @@
-[tool.poetry]
-name = "time-tracker"
+[project]
+name = "time_tracker"
 version = "0.2.0a1"
-description = "Utilities to track my working hours"
-authors = ["Martina Oefelein"]
-license = "MIT"
+description = "Utility to track my working hours"
+readme = "README.md"
+authors = [
+    { name = "Martina Oefelein", email = "Martina@Oefelein.de" }
+]
+requires-python = ">=3.13"
+dependencies = [
+    "pyobjc-core>=11.0",
+    "pyobjc-framework-cocoa>=11.0",
+]
 
-[tool.poetry.dependencies]
-python = "^3.9"
-
-[tool.poetry.dev-dependencies]
-
-[tool.poetry.scripts]
-time_tracker = 'time_tracker:main'
+[project.scripts]
+time_tracker = "time_tracker:main"
+time_tracker_agent = "time_tracker.agent:main"
 
 [build-system]
-requires = ["poetry-core>=1.0.0"]
-build-backend = "poetry.core.masonry.api"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
