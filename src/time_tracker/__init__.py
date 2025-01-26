@@ -16,7 +16,7 @@ import sys
 from typing import Iterable, List, NamedTuple, Optional, Sequence, TextIO
 
 BARS = " ▁▂▃▄▅▆▇█"
-LOGDIR = os.path.expanduser("~/.time-tracker")
+LOG_DIR = os.path.expanduser("~/.time-tracker")
 
 ANSI_RESET="\033[0m"
 ANSI_RED="\033[31m"
@@ -55,10 +55,10 @@ class Span(NamedTuple):
 def get_log_filename(day: Optional[datetime.date]=None) -> str:
     if day is None:
         day = datetime.date.today()
-    return os.path.join(LOGDIR, f"{day}.log")
+    return os.path.join(LOG_DIR, f"{day}.log")
     
 def log_event(name: str, activity: Activity, project: str="", now: Optional[datetime.datetime] = None):
-    os.makedirs(LOGDIR, exist_ok=True)
+    os.makedirs(LOG_DIR, exist_ok=True)
     if not now:
         now = datetime.datetime.now()
     filename = get_log_filename(now.date())
@@ -89,7 +89,7 @@ class Project:
 
 def load_projects()->List[Project]:
     try:
-        with open(os.path.join(LOGDIR, "projects.txt"), "rt") as f:
+        with open(os.path.join(LOG_DIR, "projects.txt"), "rt") as f:
             lines = f.readlines()
             projects = [Project(*l.split()) for l in lines]
             return projects
