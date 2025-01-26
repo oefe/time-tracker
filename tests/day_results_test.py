@@ -26,9 +26,9 @@ class TestDayResults(unittest.TestCase):
             Event(datetime.datetime(2025, 1, 25, 19, 19, 0), "ignored", Activity.WORKING),
         ]
         d = DayResults(events)
-        self.assertEqual(d.level, Level.INFO)
-        self.assertEqual(d.total_hours, 0.0)
-        self.assertEqual(d.messages, [])
+        self.assertEqual(d.level, Level.ERROR)
+        self.assertEqual(len(d.messages), 1)
+        self.assertEqual(d.messages[0].text, "Started work at 19:19 without corresponding end!")
        
     def test_total_is_rounded_down_down(self):
         events = [

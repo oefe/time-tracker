@@ -208,6 +208,9 @@ class DayResults:
                 self.spans = filter_spans(get_work_spans(events))
                 self.total_hours = get_cumulative_work(self.spans)
                 self.messages = list(get_messages(self.spans, self.total_hours))
+                last = events[-1]
+                if last.activity == Activity.WORKING and last.timestamp.date() < datetime.date.today():
+                    self.messages.append(Message(Level.ERROR, f"Started work at {last.timestamp:%H:%M} without corresponding end!"))
                 self.level = max([m.level for m in self.messages], default=Level.INFO)
             except Exception as e:
                 self.messages = [Message(Level.ERROR, str(e))]
