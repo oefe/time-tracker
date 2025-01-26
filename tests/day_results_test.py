@@ -21,3 +21,38 @@ class TestDayResults(unittest.TestCase):
         self.assertEqual(d.total_hours, 0.0)
         self.assertEqual(d.messages, [])
        
+    def test_total_is_rounded_down_down(self):
+        events = [
+            Event(datetime.datetime(2025, 1, 26, 19, 10, 0), "", Activity.WORKING),
+            Event(datetime.datetime(2025, 1, 26, 19, 40, 29), "", Activity.IDLE),
+        ]
+        d = DayResults(events)
+        self.assertEqual(d.total_hours, .5)
+       
+       
+    def test_total_is_rounded_down_up(self):
+        events = [
+            Event(datetime.datetime(2025, 1, 26, 19, 10, 0), "", Activity.WORKING),
+            Event(datetime.datetime(2025, 1, 26, 19, 40, 30), "", Activity.IDLE),
+        ]
+        d = DayResults(events)
+        self.assertAlmostEqual(d.total_hours, .51666667)
+       
+       
+    def test_total_is_rounded_up_down(self):
+        events = [
+            Event(datetime.datetime(2025, 1, 26, 19, 10, 31), "", Activity.WORKING),
+            Event(datetime.datetime(2025, 1, 26, 19, 40, 0), "", Activity.IDLE),
+        ]
+        d = DayResults(events)
+        self.assertAlmostEqual(d.total_hours, .4833333)
+       
+       
+    def test_total_is_rounded_up_up(self):
+        events = [
+            Event(datetime.datetime(2025, 1, 26, 19, 10, 59), "", Activity.WORKING),
+            Event(datetime.datetime(2025, 1, 26, 19, 40, 30), "", Activity.IDLE),
+        ]
+        d = DayResults(events)
+        self.assertEqual(d.total_hours, .5)
+       

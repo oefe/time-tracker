@@ -32,8 +32,16 @@ class Activity (enum.Enum):
     WORKING = 1
 
 ONE_HOUR = datetime.timedelta(hours=1)
+ONE_MINUTE = datetime.timedelta(minutes=1)
 SHORT_BREAK = datetime.timedelta(minutes=3)
 SHORT_WORK = datetime.timedelta(minutes=1)
+
+def rounded_datetime(dt: datetime.datetime) -> datetime.datetime:
+    """Round dt to the nearest minute."""
+    result = dt.replace(second=0, microsecond=0)
+    if dt.second >= 30:
+        result += ONE_MINUTE
+    return result
 
 class Event(NamedTuple):
     timestamp: datetime.datetime
@@ -49,8 +57,18 @@ class Span(NamedTuple):
     def duration(self) -> datetime.timedelta:
         return self.end - self.start
     
+    def rounded_duration(self) -> datetime.timedelta:
+        """Duration based on rounded start/end times.
+        
+        Note that this is not always the same as duration rounded to a minute.
+        We use this value to match HR's reporting, which is based on whole minutes.
+        """
+        return rounded_datetime(self.end) - rounded_datetime(self.start)
+    
     def __str__(self) -> str:
-        return f"{self.start:%H:%M}-{self.end:%H:%M} ({self.duration() / ONE_HOUR:.2f}){' ' if self.project else ''}{self.project}"
+        start = rounded_datetime(self.start)
+        end = rounded_datetime(self.end)
+        return f"{start:%H:%M}-{end:%H:%M} ({self.duration() / ONE_HOUR:.2f}){' ' if self.project else ''}{self.project}"
 
 def get_log_filename(day: Optional[datetime.date]=None) -> str:
     if day is None:
@@ -142,7 +160,7 @@ def filter_spans(spans: Iterable[Span]) -> List[Span]:
 
 def get_cumulative_work(spans: Iterable[Span]) -> float:
     #TODO adjust durations for required breaks
-    total = sum((s.duration() for s in spans), datetime.timedelta())
+    total = sum((s.rounded_duration() for s in spans), datetime.timedelta())
     return total / ONE_HOUR
 
 class Level(enum.IntEnum):
