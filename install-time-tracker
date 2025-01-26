@@ -16,7 +16,7 @@ cat <<EOF > ~/Library/LaunchAgents/de.oefelein.time-tracker.plist
 	<string>de.oefelein.time-tracker</string>
 	<key>ProgramArguments</key>
 	<array>
-		<string>`which time-tracker-agent.py`</string>
+		<string>$PWD/time-tracker-agent.py</string>
 	</array>
     <key>KeepAlive</key>
     <true/>

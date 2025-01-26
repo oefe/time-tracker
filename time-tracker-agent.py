@@ -1,3 +1,12 @@
+#!/usr/bin/env uv run
+# /// script
+# requires-python = ">=3.13"
+# dependencies = [
+#   "pyobjc-framework-cocoa>=11.0",
+#   "pyobjc-core>=11.0",
+# ]
+# ///
+
 import AppKit
 import Foundation
 from PyObjCTools import AppHelper

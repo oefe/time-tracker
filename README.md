@@ -10,6 +10,7 @@ Before installing time-tracker, make sure you have the following installed:
 
 * [pipx](https://pypa.github.io/pipx/)
 * SwiftBar
+* [uv](https://docs.astral.sh/uv/)
 
 ### Run Install Script
 
