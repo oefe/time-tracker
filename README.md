@@ -9,7 +9,7 @@ Utilities to track my working hours
 Before installing time-tracker, make sure you have the following installed:
 
 * [pipx](https://pypa.github.io/pipx/)
-* SwiftBar
+* [SwiftBar](https://swiftbar.app)
 * [uv](https://docs.astral.sh/uv/)
 
 ### Run Install Script
