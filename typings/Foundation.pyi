@@ -10,7 +10,7 @@ class NSNotificationCenter (NSObject):
     def addObserver_selector_name_object_(self, observer: NSObject, selector: str, name: str, object: Optional[NSObject]) -> None: ...
 
 class NSNotificationSuspensionBehavior(Enum):
-    NSNotificationSuspensionBehaviorDeliverImmediately: int
+    NSNotificationSuspensionBehaviorDeliverImmediately = 4
 
 NSNotificationSuspensionBehaviorDeliverImmediately = NSNotificationSuspensionBehavior.NSNotificationSuspensionBehaviorDeliverImmediately
 
