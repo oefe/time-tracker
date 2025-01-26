@@ -1,11 +1,11 @@
-# <bitbar.title>Time Tracker</bitbar.title>
-# <bitbar.version>v0.1</bitbar.version>
-# <bitbar.author>Martina Oefelein</bitbar.author>
-# <bitbar.author.github>oefe</bitbar.author.github>
-# <bitbar.desc>Utilities to track my working hours</bitbar.desc>
-# <bitbar.image></bitbar.image>
-# <bitbar.dependencies>python</bitbar.dependencies>
-# <bitbar.abouturl>http://oefelein.de/</bitbar.abouturl>
+# <xbar.title>Time Tracker</xbar.title>
+# <xbar.version>v0.1</xbar.version>
+# <xbar.author>Martina Oefelein</xbar.author>
+# <xbar.author.github>oefe</xbar.author.github>
+# <xbar.desc>Utilities to track my working hours</xbar.desc>
+# <xbar.image></xbar.image>
+# <xbar.dependencies>python</xbar.dependencies>
+# <xbar.abouturl>http://oefelein.de/</xbar.abouturl>
 
 from dataclasses import dataclass
 import datetime
