@@ -88,10 +88,13 @@ class Project:
     symbol: str
 
 def load_projects()->List[Project]:
-    with open(os.path.join(LOGDIR, "projects.txt"), "rt") as f:
-        lines = f.readlines()
-        projects = [Project(*l.split()) for l in lines]
-        return projects
+    try:
+        with open(os.path.join(LOGDIR, "projects.txt"), "rt") as f:
+            lines = f.readlines()
+            projects = [Project(*l.split()) for l in lines]
+            return projects
+    except FileNotFoundError:
+        return []
 
 def get_work_spans(
         events: Sequence[Event],
