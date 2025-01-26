@@ -134,7 +134,7 @@ def get_work_spans(
             if working:
                 working = False
                 yield Span (start, e.timestamp, project)
-    if working:
+    if working and start.date() == now.date():
         yield Span(start, now, project)
 
 def filter_short_breaks(spans: Iterable[Span]) -> Iterable[Span]:

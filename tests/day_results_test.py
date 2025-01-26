@@ -21,6 +21,15 @@ class TestDayResults(unittest.TestCase):
         self.assertEqual(d.total_hours, 0.0)
         self.assertEqual(d.messages, [])
        
+    def test_incomplete_log(self):
+        events = [
+            Event(datetime.datetime(2025, 1, 25, 19, 19, 0), "ignored", Activity.WORKING),
+        ]
+        d = DayResults(events)
+        self.assertEqual(d.level, Level.INFO)
+        self.assertEqual(d.total_hours, 0.0)
+        self.assertEqual(d.messages, [])
+       
     def test_total_is_rounded_down_down(self):
         events = [
             Event(datetime.datetime(2025, 1, 26, 19, 10, 0), "", Activity.WORKING),
