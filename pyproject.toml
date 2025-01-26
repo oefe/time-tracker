@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "time-tracker"
-version = "0.1.0"
+version = "0.2.0a1"
 description = "Utilities to track my working hours"
 authors = ["Martina Oefelein"]
 license = "MIT"
