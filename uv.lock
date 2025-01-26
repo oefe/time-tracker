@@ -29,12 +29,12 @@ name = "time-tracker"
 version = "0.2.0a1"
 source = { editable = "." }
 dependencies = [
-    { name = "pyobjc-core" },
-    { name = "pyobjc-framework-cocoa" },
+    { name = "pyobjc-core", marker = "sys_platform == 'darwin'" },
+    { name = "pyobjc-framework-cocoa", marker = "sys_platform == 'darwin'" },
 ]
 
 [package.metadata]
 requires-dist = [
-    { name = "pyobjc-core", specifier = ">=11.0" },
-    { name = "pyobjc-framework-cocoa", specifier = ">=11.0" },
+    { name = "pyobjc-core", marker = "sys_platform == 'darwin'", specifier = ">=11.0" },
+    { name = "pyobjc-framework-cocoa", marker = "sys_platform == 'darwin'", specifier = ">=11.0" },
 ]
