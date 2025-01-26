@@ -11,12 +11,15 @@
     "python.testing.nosetestsEnabled": false,
     "python.testing.unittestEnabled": true,
     "cSpell.words": [
+        "abouturl",
         "moefelei",
         "oefe",
         "Oefelein",
         "pipx",
         "Pylance",
         "pyobjc",
-        "sfimage"
+        "questionmark",
+        "sfimage",
+        "xbar"
     ]
 }
