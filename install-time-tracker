@@ -1,6 +1,6 @@
 #! /bin/sh
 echo Setting up uv environment
-uv tool install .
+uv tool install --python 3.13 .
 
 echo installing SwiftBar Plugin
 ln -f -s `which time_tracker` `defaults read com.ameba.SwiftBar PluginDirectory`/time_tracker.1m.py
