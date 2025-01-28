@@ -3,7 +3,7 @@ echo Setting up uv environment
 uv tool install --python 3.13 .
 
 echo installing SwiftBar Plugin
-ln -f -s `which time_tracker` `defaults read com.ameba.SwiftBar PluginDirectory`/time_tracker.1m.py
+ln -f -s "$(which time_tracker)" "$(defaults read com.ameba.SwiftBar PluginDirectory)/time_tracker.1m.py"
 
 echo installing launch agent
 cat <<EOF > ~/Library/LaunchAgents/de.oefelein.time-tracker.plist
@@ -15,7 +15,7 @@ cat <<EOF > ~/Library/LaunchAgents/de.oefelein.time-tracker.plist
 	<string>de.oefelein.time-tracker</string>
 	<key>ProgramArguments</key>
 	<array>
-		<string>`which time_tracker_agent`</string>
+		<string>$(which time_tracker_agent)</string>
 	</array>
     <key>KeepAlive</key>
     <true/>
