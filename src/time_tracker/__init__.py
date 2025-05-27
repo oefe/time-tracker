@@ -7,6 +7,7 @@
 # <xbar.dependencies>python</xbar.dependencies>
 # <xbar.abouturl>http://oefelein.de/</xbar.abouturl>
 
+from collections import defaultdict
 from dataclasses import dataclass
 import datetime
 import enum
@@ -253,6 +254,19 @@ class DayResults:
             self.messages = [Message(Level.ERROR, "No log file")]
 
 
+class ProjectStats:
+    stats: defaultdict[str, float]
+    total = 0.0
+
+    def __init__(self) -> None:
+        self.stats = defaultdict[str, float](float)
+    def add(self, spans: Sequence[Span]):
+        for span in spans:
+            hours = span.duration() / ONE_HOUR
+            self.stats[span.project] += hours
+            self.total += hours
+
+
 def write_menu():
     results = DayResults(load_log())
     projects = load_projects()
@@ -289,8 +303,10 @@ def write_report():
     today = datetime.date.today()
     a_week_ago = today - datetime.timedelta(days=7)
     day = datetime.date(a_week_ago.year, a_week_ago.month, 1)
+    project_stats = ProjectStats()
     while day < today:
-        if day.isoweekday() < 6:
+        weekday = day.isoweekday()
+        if weekday < 6:
             results = DayResults(load_log(day=day))
             print()
             print(
@@ -300,6 +316,15 @@ def write_report():
                 print(f"{ANSI_SHADES[i % 2]}{s}{ANSI_RESET}")
             for message in results.messages:
                 print(message.level.ansi_format(message.text))
+            project_stats.add(results.spans)
+        elif weekday == 6:
+            print()
+            print(f"{ANSI_BOLD}Weekly totals:{ANSI_RESET}")
+            for project, hours in project_stats.stats.items():
+                print(f"{hours:5.2f} - {project}")
+            print(f"{ANSI_BOLD}{project_stats.total:5.2f} - total{ANSI_RESET}")
+            project_stats = ProjectStats()
+
         day += datetime.timedelta(days=1)
 
 
