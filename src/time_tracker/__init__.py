@@ -18,23 +18,26 @@ from typing import Iterable, List, NamedTuple, Optional, Sequence, TextIO
 BARS = " ▁▂▃▄▅▆▇█"
 LOG_DIR = os.path.expanduser("~/.time-tracker")
 
-ANSI_RESET="\033[0m"
-ANSI_RED="\033[31m"
-ANSI_ORANGE="\033[33m"
-ANSI_GREEN="\033[32m"
-ANSI_BOLD="\033[1m"
-ANSI_SHADE_EVEN="\033[48;5;255m"
-ANSI_SHADE_ODD=""
+ANSI_RESET = "\033[0m"
+ANSI_RED = "\033[31m"
+ANSI_ORANGE = "\033[33m"
+ANSI_GREEN = "\033[32m"
+ANSI_BOLD = "\033[1m"
+ANSI_SHADE_EVEN = "\033[48;5;255m"
+ANSI_SHADE_ODD = ""
 ANSI_SHADES = [ANSI_SHADE_EVEN, ANSI_SHADE_ODD]
 
-class Activity (enum.Enum):
+
+class Activity(enum.Enum):
     IDLE = 0
     WORKING = 1
+
 
 ONE_HOUR = datetime.timedelta(hours=1)
 ONE_MINUTE = datetime.timedelta(minutes=1)
 SHORT_BREAK = datetime.timedelta(minutes=3)
 SHORT_WORK = datetime.timedelta(minutes=1)
+
 
 def rounded_datetime(dt: datetime.datetime) -> datetime.datetime:
     """Round dt to the nearest minute."""
@@ -43,11 +46,13 @@ def rounded_datetime(dt: datetime.datetime) -> datetime.datetime:
         result += ONE_MINUTE
     return result
 
+
 class Event(NamedTuple):
     timestamp: datetime.datetime
     name: str
     activity: Activity
     project: str = ""
+
 
 class Span(NamedTuple):
     start: datetime.datetime
@@ -56,26 +61,33 @@ class Span(NamedTuple):
 
     def duration(self) -> datetime.timedelta:
         return self.end - self.start
-    
+
     def rounded_duration(self) -> datetime.timedelta:
         """Duration based on rounded start/end times.
-        
+
         Note that this is not always the same as duration rounded to a minute.
         We use this value to match HR's reporting, which is based on whole minutes.
         """
         return rounded_datetime(self.end) - rounded_datetime(self.start)
-    
+
     def __str__(self) -> str:
         start = rounded_datetime(self.start)
         end = rounded_datetime(self.end)
         return f"{start:%H:%M}-{end:%H:%M} ({self.duration() / ONE_HOUR:.2f}){' ' if self.project else ''}{self.project}"
 
-def get_log_filename(day: Optional[datetime.date]=None) -> str:
+
+def get_log_filename(day: Optional[datetime.date] = None) -> str:
     if day is None:
         day = datetime.date.today()
     return os.path.join(LOG_DIR, f"{day}.log")
-    
-def log_event(name: str, activity: Activity, project: str="", now: Optional[datetime.datetime] = None):
+
+
+def log_event(
+    name: str,
+    activity: Activity,
+    project: str = "",
+    now: Optional[datetime.datetime] = None,
+):
     os.makedirs(LOG_DIR, exist_ok=True)
     if not now:
         now = datetime.datetime.now()
@@ -83,16 +95,21 @@ def log_event(name: str, activity: Activity, project: str="", now: Optional[date
     with open(filename, mode="a") as log:
         print(now, name, activity.name, project, sep="\t", file=log)
 
+
 def parse_log_line(line: str) -> Event:
     timestamp, name, activity, *rest = line.strip().split("\t")
     project = rest[0] if rest else ""
-    return Event(datetime.datetime.fromisoformat(timestamp), name, Activity[activity], project)
+    return Event(
+        datetime.datetime.fromisoformat(timestamp), name, Activity[activity], project
+    )
+
 
 def parse_log(log: TextIO) -> Sequence[Event]:
     lines = log.readlines()
     return [parse_log_line(line) for line in lines]
 
-def load_log(day: Optional[datetime.date]=None) -> Sequence[Event]:
+
+def load_log(day: Optional[datetime.date] = None) -> Sequence[Event]:
     filename = get_log_filename(day)
     try:
         with open(filename) as log:
@@ -100,12 +117,14 @@ def load_log(day: Optional[datetime.date]=None) -> Sequence[Event]:
     except FileNotFoundError:
         return []
 
+
 @dataclass
 class Project:
     name: str
     symbol: str
 
-def load_projects()->List[Project]:
+
+def load_projects() -> List[Project]:
     try:
         with open(os.path.join(LOG_DIR, "projects.txt"), "rt") as f:
             lines = f.readlines()
@@ -114,9 +133,10 @@ def load_projects()->List[Project]:
     except FileNotFoundError:
         return []
 
+
 def get_work_spans(
-        events: Sequence[Event],
-        now: datetime.datetime=datetime.datetime.now()) -> Iterable[Span]:
+    events: Sequence[Event], now: datetime.datetime = datetime.datetime.now()
+) -> Iterable[Span]:
     working = False
     start = datetime.datetime.now()
     project = ""
@@ -133,9 +153,10 @@ def get_work_spans(
         else:
             if working:
                 working = False
-                yield Span (start, e.timestamp, project)
+                yield Span(start, e.timestamp, project)
     if working and start.date() == now.date():
         yield Span(start, now, project)
+
 
 def filter_short_breaks(spans: Iterable[Span]) -> Iterable[Span]:
     it = iter(spans)
@@ -143,7 +164,7 @@ def filter_short_breaks(spans: Iterable[Span]) -> Iterable[Span]:
         current = next(it)
     except StopIteration:
         return ()
-        
+
     for nxt in it:
         if nxt.start - current.end < SHORT_BREAK and nxt.project == current.project:
             current = Span(current.start, nxt.end, current.project)
@@ -152,33 +173,39 @@ def filter_short_breaks(spans: Iterable[Span]) -> Iterable[Span]:
             current = nxt
     yield current
 
+
 def filter_short_work(spans: Iterable[Span]) -> Iterable[Span]:
     return (s for s in spans if s.duration() > SHORT_WORK)
+
 
 def filter_spans(spans: Iterable[Span]) -> List[Span]:
     return list(filter_short_work(filter_short_breaks(spans)))
 
+
 def get_cumulative_work(spans: Iterable[Span]) -> float:
-    #TODO adjust durations for required breaks
+    # TODO adjust durations for required breaks
     total = sum((s.rounded_duration() for s in spans), datetime.timedelta())
     return total / ONE_HOUR
+
 
 class Level(enum.IntEnum):
     INFO = 0
     PRAISE = 1
     WARNING = 2
     ERROR = 3
-    
+
     def ansi_color_code(self) -> str:
         return [ANSI_RESET, ANSI_GREEN, ANSI_ORANGE, ANSI_RED][self.value]
-    
+
     def ansi_format(self, text: str) -> str:
         return f"{self.ansi_color_code()}{text}{ANSI_RESET}"
+
 
 @dataclass
 class Message:
     level: Level
     text: str
+
 
 def get_messages(spans: Sequence[Span], total_hours: float) -> Iterable[Message]:
     if total_hours > 10.0:
@@ -187,8 +214,8 @@ def get_messages(spans: Sequence[Span], total_hours: float) -> Iterable[Message]
         yield Message(Level.WARNING, "You really worked enough for today")
     elif 7.75 < total_hours < 8.25:
         yield Message(Level.PRAISE, "You worked enough for today")
-    
-    if spans:    
+
+    if spans:
         _start, end, _project = spans[-1]
         if end.hour >= 22:
             yield Message(Level.ERROR, "Stop working now, it's after 10pm!")
@@ -200,7 +227,7 @@ class DayResults:
     spans: List[Span] = []
     total_hours: float = 0.0
     messages: List[Message] = []
-    level: Level= Level.ERROR
+    level: Level = Level.ERROR
 
     def __init__(self, events: Sequence[Event]):
         if events:
@@ -209,14 +236,22 @@ class DayResults:
                 self.total_hours = get_cumulative_work(self.spans)
                 self.messages = list(get_messages(self.spans, self.total_hours))
                 last = events[-1]
-                if last.activity == Activity.WORKING and last.timestamp.date() < datetime.date.today():
-                    self.messages.append(Message(Level.ERROR, f"Started work at {last.timestamp:%H:%M} without corresponding end!"))
+                if (
+                    last.activity == Activity.WORKING
+                    and last.timestamp.date() < datetime.date.today()
+                ):
+                    self.messages.append(
+                        Message(
+                            Level.ERROR,
+                            f"Started work at {last.timestamp:%H:%M} without corresponding end!",
+                        )
+                    )
                 self.level = max([m.level for m in self.messages], default=Level.INFO)
             except Exception as e:
                 self.messages = [Message(Level.ERROR, str(e))]
         else:
-            self.messages= [Message(Level.ERROR, "No log file")]
-             
+            self.messages = [Message(Level.ERROR, "No log file")]
+
 
 def write_menu():
     results = DayResults(load_log())
@@ -228,7 +263,12 @@ def write_menu():
     if todays_projects:
         last_project_name = todays_projects[-1]
         project_symbol = [p.symbol for p in projects if p.name == last_project_name][0]
-    print(results.level.ansi_format(f"{results.total_hours:.2f} {BARS[min(int(results.total_hours), 8)]}") + f"|ansi=True sfimage={project_symbol}")
+    print(
+        results.level.ansi_format(
+            f"{results.total_hours:.2f} {BARS[min(int(results.total_hours), 8)]}"
+        )
+        + f"|ansi=True sfimage={project_symbol}"
+    )
     print("---")
     for message in results.messages:
         print(f"{message.level.ansi_format(message.text)}|ansi=True")
@@ -237,8 +277,13 @@ def write_menu():
     print(f"Report|bash={sys.argv[0]} param0=report")
     print("---")
     for p in projects:
-        print(f"{p.name}|checked={p.name == last_project_name} bash={sys.argv[0]} param0=project param1={p.name} terminal=False refresh=True sfimage={p.symbol}")
-        print(f"{p.name} (back)|bash={sys.argv[0]} param0=project-back param1={p.name} terminal=False refresh=True sfimage={p.symbol} alternate=True")
+        print(
+            f"{p.name}|checked={p.name == last_project_name} bash={sys.argv[0]} param0=project param1={p.name} terminal=False refresh=True sfimage={p.symbol}"
+        )
+        print(
+            f"{p.name} (back)|bash={sys.argv[0]} param0=project-back param1={p.name} terminal=False refresh=True sfimage={p.symbol} alternate=True"
+        )
+
 
 def write_report():
     today = datetime.date.today()
@@ -248,15 +293,19 @@ def write_report():
         if day.isoweekday() < 6:
             results = DayResults(load_log(day=day))
             print()
-            print(f"{ANSI_BOLD}{day:%d.%m.%Y - %A}: {results.total_hours:.2f}{ANSI_RESET}")
+            print(
+                f"{ANSI_BOLD}{day:%d.%m.%Y - %A}: {results.total_hours:.2f}{ANSI_RESET}"
+            )
             for i, s in enumerate(results.spans):
                 print(f"{ANSI_SHADES[i % 2]}{s}{ANSI_RESET}")
             for message in results.messages:
                 print(message.level.ansi_format(message.text))
         day += datetime.timedelta(days=1)
 
+
 def log_project(project: str):
     log_event("project", Activity.WORKING, project)
+
 
 def log_project_back(project: str):
     events = load_log()
@@ -276,6 +325,7 @@ def main():
             print(f"Unknown command: {sys.argv[1]}")
     else:
         write_menu()
+
 
 if __name__ == "__main__":
     main()
