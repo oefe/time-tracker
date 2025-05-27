@@ -1,6 +1,6 @@
 [project]
 name = "time_tracker"
-version = "0.2.0a1"
+version = "0.2.1"
 description = "Utility to track my working hours"
 readme = "README.md"
 authors = [
